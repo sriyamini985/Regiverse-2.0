@@ -1,0 +1,83 @@
+import { useState } from "react";
+import { useNavigate, useParams } from "react-router-dom";
+
+const UploadPage = () => {
+  const navigate = useNavigate();
+  
+  // FIX: Extract conferenceId from React Router params, not window.location
+  const { conferenceId } = useParams();
+
+  const [file, setFile] = useState<File | null>(null);
+  const [loading, setLoading] = useState(false);
+
+  const handleUpload = async () => {
+    if (!file) {
+      alert("Please select an excel file first.");
+      return;
+    }
+
+    try {
+      setLoading(true);
+      const formData = new FormData();
+      formData.append("file", file);
+      formData.append("conferenceId", conferenceId || "");
+
+      const res = await fetch(`${import.meta.env.VITE_API_URL}/api/conferences/import-excel`, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+
+      if (data.success || res.ok) {
+        alert(`${data.inserted || 'All'} delegates imported successfully!`);
+        // Navigate back to the dashboard so they can see the updated count
+        navigate(`/admin/conference/${conferenceId}`); 
+      } else {
+        alert("Import failed: " + (data.message || "Unknown error"));
+      }
+
+    } catch (err) {
+      console.log(err);
+      alert("Server Error during upload");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#F4F7FB] p-6 md:p-12">
+      <div className="max-w-2xl mx-auto">
+        <div className="bg-white rounded-[2rem] shadow-sm p-10 border border-slate-200">
+          
+          <h1 className="text-4xl font-extrabold text-slate-900 mb-2">Upload Roster</h1>
+          <p className="text-slate-500 mb-8 font-medium">
+            Workspace ID: 
+            <span className="ml-2 font-mono text-xs bg-slate-100 text-slate-600 px-2 py-1 rounded">
+              {conferenceId}
+            </span>
+          </p>
+
+          <div className="border-2 border-dashed border-slate-300 rounded-3xl p-8 text-center bg-slate-50 hover:bg-slate-100 transition-colors mb-8">
+            <input
+              type="file"
+              accept=".xlsx,.xls,.csv"
+              onChange={(e) => setFile(e.target.files?.[0] || null)}
+              className="w-full text-slate-600 file:mr-4 file:py-3 file:px-6 file:rounded-xl file:border-0 file:text-sm file:font-bold file:bg-blue-600 file:text-white hover:file:bg-blue-700 cursor-pointer"
+            />
+          </div>
+
+          <button
+            onClick={handleUpload}
+            disabled={loading || !file}
+            className="w-full bg-slate-900 hover:bg-blue-600 disabled:bg-slate-300 text-white py-4 rounded-2xl text-lg font-bold transition-all shadow-md active:scale-[0.98]"
+          >
+            {loading ? "Processing Upload..." : "Import Database"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
+export default UploadPage;
