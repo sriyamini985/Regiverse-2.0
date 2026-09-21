@@ -41,8 +41,12 @@ async function run() {
   console.log("=========================================================");
 
   console.log("\nConnecting to MongoDB database...");
-  await mongoose.connect(MONGO_URI);
-  console.log("✅ Database connected successfully!");
+  const options = {};
+  if (process.env.MONGO_DB_NAME) {
+    options.dbName = process.env.MONGO_DB_NAME.trim();
+  }
+  await mongoose.connect(MONGO_URI, options);
+  console.log(`✅ Database connected successfully! [Database: ${mongoose.connection.name}]`);
 
   // 1. Setup temporary testing data
   console.log("\n[Setup] Cleaning up old test data if present...");

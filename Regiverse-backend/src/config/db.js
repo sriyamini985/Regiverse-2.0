@@ -9,14 +9,20 @@ const connectDB = async (retries = 5) => {
     throw new Error("MONGO_URI is missing in environment variables");
   }
 
+  const options = {
+    serverSelectionTimeoutMS: 15000,
+    tls: true,
+    tlsAllowInvalidCertificates: false,
+  };
+
+  if (process.env.MONGO_DB_NAME) {
+    options.dbName = process.env.MONGO_DB_NAME.trim();
+  }
+
   for (let attempt = 1; attempt <= retries; attempt++) {
     try {
-      await mongoose.connect(process.env.MONGO_URI, {
-        serverSelectionTimeoutMS: 15000,
-        tls: true,
-        tlsAllowInvalidCertificates: false,
-      });
-      console.log("🟢 MongoDB Connected");
+      await mongoose.connect(process.env.MONGO_URI, options);
+      console.log(`🟢 MongoDB Connected [Database: ${mongoose.connection.name}]`);
       return;
     } catch (err) {
       console.error(`🔴 MongoDB attempt ${attempt}/${retries} failed:`, err.message);

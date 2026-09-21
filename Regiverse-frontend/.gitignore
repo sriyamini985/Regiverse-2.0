@@ -9,3 +9,4 @@ vite.config.*s.*
 .env
 .env.*
 *.env
+!.env.example

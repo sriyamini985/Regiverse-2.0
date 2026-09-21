@@ -14,8 +14,12 @@ const ParticipantSchema = new mongoose.Schema({}, { strict: false });
 const Participant = mongoose.model("Participant", ParticipantSchema);
 
 async function run() {
-  await mongoose.connect(MONGO_URI);
-  console.log("Connected to MongoDB!");
+  const options = {};
+  if (process.env.MONGO_DB_NAME) {
+    options.dbName = process.env.MONGO_DB_NAME.trim();
+  }
+  await mongoose.connect(MONGO_URI, options);
+  console.log(`Connected to MongoDB! [Database: ${mongoose.connection.name}]`);
 
   // Search for conference
   console.log("\nSearching for conferences matching 'demo-event':");
