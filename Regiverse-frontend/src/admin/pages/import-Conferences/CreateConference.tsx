@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { API_URL } from "../../../config/api";
 
 interface Conference {
   _id: string;
@@ -24,7 +25,7 @@ const CreateConference = () => {
   const loadConferences = async () => {
     try {
       const res = await fetch(
-        `${import.meta.env.VITE_API_URL}/api/conferences`
+        `${API_URL}/api/conferences`
       );
 
       const data = await res.json();
@@ -61,7 +62,7 @@ const CreateConference = () => {
           .replace(/\s+/g, "") + year;
 
       const res = await fetch(
-        "http://localhost:5000/api/conferences",
+        `${API_URL}/api/conferences`,
         {
           method: "POST",
 

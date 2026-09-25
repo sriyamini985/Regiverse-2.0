@@ -1,5 +1,6 @@
 import { useState } from "react";
 import * as XLSX from "xlsx";
+import { API_URL } from "../../../../config/api";
 
 const ImportParticipants = () => {
   const [loading, setLoading] = useState(false);
@@ -91,7 +92,7 @@ console.log("FINAL FORMATTED:", formatted);
         const chunk = formatted.slice(i, i + chunkSize);
 
         const res = await fetch(
-          "http://localhost:5000/api/participants/bulk",
+          `${API_URL}/api/participants/bulk`,
           {
             method: "POST",
             headers: {

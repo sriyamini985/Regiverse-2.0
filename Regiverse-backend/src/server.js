@@ -14,6 +14,12 @@ import bulkEmailRoutes from "./routes/bulkEmailRoutes.js";
 import bulkWhatsappRoutes from "./routes/bulkWhatsappRoutes.js";
 import dashboardRoutes from "./routes/dashboardRoutes.js";
 
+import { fileURLToPath } from "url";
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+dotenv.config({ path: path.resolve(__dirname, "../.env") });
 dotenv.config({ path: path.resolve("./.env") });
 dns.setDefaultResultOrder("ipv4first");
 
@@ -22,6 +28,14 @@ connectDB();
 
 app.use(cors({ origin: "*", credentials: true }));
 app.use(express.json({ limit: "50mb" }));
+
+app.get("/", (req, res) => {
+  res.json({ status: "ok", message: "Regiverse 2.0 API is running" });
+});
+
+app.get("/health", (req, res) => {
+  res.json({ status: "healthy", timestamp: new Date().toISOString() });
+});
 
 app.use("/api/conferences", conferenceRoutes);
 app.use("/api/participants", participantRoutes);

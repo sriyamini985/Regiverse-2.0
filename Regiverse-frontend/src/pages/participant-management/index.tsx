@@ -1,5 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
+import { API_URL } from "../../config/api";
 
 /* =========================
    TYPES
@@ -307,7 +308,7 @@ const ParticipantPage = () => {
       );
 
       const res = await fetch(
-        "http://localhost:5000/api/participants/bulk",
+        `${API_URL}/api/participants/bulk`,
         {
           method: "POST",
           headers: {
