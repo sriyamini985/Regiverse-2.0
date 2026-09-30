@@ -2,6 +2,7 @@
   "name": "regiverse-2-0",
   "private": true,
   "scripts": {
+    "start": "node Regiverse-backend/src/server.js",
     "frontend": "npm start --prefix regiverse-frontend",
     "backend": "npm run dev --prefix regiverse-backend",
     "dev": "concurrently \"npm run backend\" \"npm run frontend\"",
