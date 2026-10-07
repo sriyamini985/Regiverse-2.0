@@ -6,7 +6,7 @@ const HighlightCards = ({ meals, total, selectedDay }: any) => {
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
       {cards.map((card, i) => {
         const remaining = Math.max(0, total - card.value);
         const percentage = total > 0 ? Math.round((card.value / total) * 100) : 0;
@@ -29,8 +29,8 @@ const HighlightCards = ({ meals, total, selectedDay }: any) => {
             </div>
 
             <div className="mt-6 pt-3 border-t border-white/20 flex justify-between text-xs font-medium">
-              <span>Remaining: <strong>{remaining}</strong></span>
-              <span>Total Roster: <strong>{total}</strong></span>
+              <span>Remaining: <strong>{remaining} to attend</strong></span>
+              <span className="opacity-80">Session: {card.title}</span>
             </div>
           </div>
         );
