@@ -18,30 +18,24 @@ export const HighlightCards: React.FC<HighlightCardsProps> = ({
 }) => {
   const cards = [
     {
-      title: "Breakfast Service",
+      title: "Breakfast",
       value: meals?.breakfast || 0,
-      icon: <Coffee className="w-5 h-5 text-amber-600" />,
-      accentBg: "bg-amber-50 border-amber-100",
-      barColor: "bg-amber-500",
+      icon: <Coffee className="w-4 h-4 text-slate-600" />,
     },
     {
-      title: "Lunch Service",
+      title: "Lunch",
       value: meals?.lunch || 0,
-      icon: <Utensils className="w-5 h-5 text-blue-600" />,
-      accentBg: "bg-blue-50 border-blue-100",
-      barColor: "bg-blue-600",
+      icon: <Utensils className="w-4 h-4 text-slate-600" />,
     },
     {
-      title: "Dinner Service",
+      title: "Dinner",
       value: meals?.dinner || 0,
-      icon: <UtensilsCrossed className="w-5 h-5 text-emerald-600" />,
-      accentBg: "bg-emerald-50 border-emerald-100",
-      barColor: "bg-emerald-600",
+      icon: <UtensilsCrossed className="w-4 h-4 text-slate-600" />,
     },
   ];
 
   return (
-    <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
       {cards.map((card, i) => {
         const remaining = Math.max(0, total - card.value);
         const percent = total > 0 ? Math.min(100, Math.round((card.value / total) * 100)) : 0;
@@ -49,72 +43,42 @@ export const HighlightCards: React.FC<HighlightCardsProps> = ({
         return (
           <div
             key={i}
-            className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-2xs hover:shadow-xs transition-all duration-200 flex flex-col justify-between"
+            className="bg-white rounded-xl border border-[#E2E8F0] p-4 shadow-2xs flex flex-col justify-between"
           >
             <div>
               <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+                <span className="text-xs font-semibold text-[#0F172A]">
                   {selectedDay} • {card.title}
                 </span>
-                <div
-                  className={`w-10 h-10 rounded-xl border flex items-center justify-center shrink-0 ${card.accentBg}`}
-                >
+                <div className="w-7 h-7 rounded-md bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0">
                   {card.icon}
                 </div>
               </div>
 
-              <div className="mt-4 flex items-baseline gap-2">
-                <span className="text-4xl font-extrabold text-slate-900 tracking-tight">
+              <div className="mt-3 flex items-baseline gap-2">
+                <span className="text-2xl font-bold text-[#0F172A] tracking-tight">
                   {card.value.toLocaleString()}
                 </span>
-                <span className="text-xs font-bold text-slate-400 uppercase">
-                  Served
-                </span>
+                <span className="text-xs text-[#64748B]">served</span>
               </div>
 
               {/* Progress bar */}
-              <div className="mt-4 space-y-1.5">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="font-semibold text-slate-600">
-                    Distribution Progress
-                  </span>
-                  <span className="font-bold text-slate-900">{percent}%</span>
-                </div>
-                <div className="h-2 w-full bg-slate-100 rounded-full overflow-hidden">
+              <div className="mt-3 space-y-1">
+                <div className="h-1.5 w-full bg-slate-100 rounded-full overflow-hidden">
                   <div
-                    className={`h-full ${card.barColor} rounded-full transition-all duration-500`}
+                    className="h-full bg-[#0F766E] rounded-full transition-all duration-300"
                     style={{ width: `${percent}%` }}
                   />
+                </div>
+                <div className="flex items-center justify-between text-[11px] text-[#64748B]">
+                  <span>{percent}% served</span>
+                  <span>{remaining} remaining</span>
                 </div>
               </div>
             </div>
 
-            {/* Metrics Breakdown Footer */}
-            <div className="mt-6 pt-4 border-t border-slate-100 grid grid-cols-3 gap-2 text-center text-xs">
-              <div className="bg-slate-50/80 p-2 rounded-xl border border-slate-100">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">
-                  Attended
-                </p>
-                <p className="text-sm font-black text-slate-800 mt-0.5">
-                  {card.value}
-                </p>
-              </div>
-              <div className="bg-slate-50/80 p-2 rounded-xl border border-slate-100">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">
-                  Remaining
-                </p>
-                <p className="text-sm font-black text-slate-800 mt-0.5">
-                  {remaining}
-                </p>
-              </div>
-              <div className="bg-slate-50/80 p-2 rounded-xl border border-slate-100">
-                <p className="text-[10px] font-bold text-slate-400 uppercase">
-                  Cap
-                </p>
-                <p className="text-sm font-black text-slate-800 mt-0.5">
-                  {total}
-                </p>
-              </div>
+            <div className="mt-3 pt-3 border-t border-[#F1F5F9] flex items-center justify-between text-xs text-[#64748B]">
+              <span>Capacity: {total} delegates</span>
             </div>
           </div>
         );

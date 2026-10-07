@@ -1,12 +1,9 @@
 import React from "react";
-import { Loader2 } from "lucide-react";
 
 export interface StatsCardProps {
   title: string;
   value: number | string;
-  icon: React.ReactNode;
-  iconBg?: string;
-  iconColor?: string;
+  icon?: React.ReactNode;
   context?: string;
   badge?: React.ReactNode;
   isLoading?: boolean;
@@ -18,8 +15,6 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   title,
   value,
   icon,
-  iconBg = "bg-blue-50 border-blue-100",
-  iconColor = "text-blue-600",
   context,
   badge,
   isLoading = false,
@@ -29,37 +24,35 @@ export const StatsCard: React.FC<StatsCardProps> = ({
   return (
     <div
       onClick={onClick}
-      className={`bg-white p-6 rounded-2xl border border-slate-200/90 shadow-xs hover:shadow-md transition-all duration-200 flex flex-col justify-between ${
-        onClick ? "cursor-pointer hover:-translate-y-0.5" : ""
+      className={`bg-white p-5 rounded-xl border border-[#E2E8F0] shadow-2xs hover:border-slate-300 transition-colors duration-150 flex flex-col justify-between ${
+        onClick ? "cursor-pointer" : ""
       } ${className}`}
     >
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex items-start justify-between gap-3">
         <div className="space-y-1">
-          <p className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+          <span className="text-xs font-medium text-[#64748B] block">
             {title}
-          </p>
-          <div className="flex items-baseline gap-2">
-            {isLoading ? (
-              <div className="h-8 w-20 bg-slate-100 animate-pulse rounded-lg" />
-            ) : (
-              <h3 className="text-3xl font-extrabold text-slate-900 tracking-tight">
-                {typeof value === "number" ? value.toLocaleString() : value}
-              </h3>
-            )}
-            {badge}
-          </div>
+          </span>
+          {isLoading ? (
+            <div className="h-7 w-20 bg-slate-100 animate-pulse rounded mt-1" />
+          ) : (
+            <div className="text-2xl font-bold text-[#0F172A] tracking-tight">
+              {typeof value === "number" ? value.toLocaleString() : value}
+            </div>
+          )}
         </div>
 
-        <div
-          className={`w-12 h-12 rounded-2xl border flex items-center justify-center shrink-0 ${iconBg} ${iconColor}`}
-        >
-          {icon}
-        </div>
+        {icon && (
+          <div className="w-9 h-9 rounded-lg bg-slate-50 border border-slate-200/80 text-slate-600 flex items-center justify-center shrink-0">
+            {icon}
+          </div>
+        )}
       </div>
 
-      {context && (
-        <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs text-slate-500">
-          <span>{context}</span>
+      {(context || badge) && (
+        <div className="mt-3 pt-3 border-t border-[#F1F5F9] flex items-center justify-between text-xs text-[#64748B]">
+          {context && <span>{context}</span>}
+          {badge && <div>{badge}</div>}
         </div>
       )}
     </div>

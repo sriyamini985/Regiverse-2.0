@@ -3,13 +3,10 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import {
   Users,
   UserPlus,
-  UploadCloud,
+  Upload,
   ChevronRight,
   Filter,
   RefreshCw,
-  Search,
-  CheckCircle2,
-  FileSpreadsheet,
 } from "lucide-react";
 import SearchBar from "./components/SearchBar";
 import DelegateTable from "./components/DelegateTable";
@@ -55,13 +52,11 @@ const RegisteredList = () => {
     }
   }, [conferenceId]);
 
-  // Extract unique categories
   const uniqueCategories = useMemo(() => {
     const cats = participants.map((p) => p.category).filter(Boolean);
     return Array.from(new Set(cats));
   }, [participants]);
 
-  // Live filter
   const filtered = useMemo(() => {
     let result = participants;
 
@@ -83,76 +78,57 @@ const RegisteredList = () => {
   }, [participants, searchQuery, selectedCategory]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
-      {/* ============================================================== */}
-      {/* BREADCRUMB & HEADER */}
-      {/* ============================================================== */}
-      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-        <Link
-          to="/admin/conferences"
-          className="hover:text-slate-900 transition-colors"
-        >
-          Event Ecosystem
+    <div className="space-y-5 max-w-7xl mx-auto">
+      {/* BREADCRUMB */}
+      <div className="flex items-center gap-1.5 text-xs text-[#64748B]">
+        <Link to="/admin/conferences" className="hover:text-[#0F172A]">
+          Events
         </Link>
         <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
         <Link
           to={`/admin/conference/${conferenceId}`}
-          className="hover:text-slate-900 transition-colors"
+          className="hover:text-[#0F172A]"
         >
-          Workspace Hub
+          Manage Event
         </Link>
         <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-        <span className="text-slate-900 font-bold">Registered Delegates</span>
+        <span className="font-semibold text-[#0F172A]">Participants</span>
       </div>
 
-      {/* TOP COMMAND BANNER */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-6 md:p-8 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      {/* HEADER */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <div className="flex items-center gap-2.5">
-            <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider border border-blue-200/70">
-              Roster Database
-            </span>
-            <div className="flex items-center gap-1.5 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200/70">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Real-Time Roster Synced</span>
-            </div>
-          </div>
-
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-2">
-            Registered Attendees
+          <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">
+            Participants
           </h1>
-          <p className="text-sm font-medium text-slate-500 mt-1 max-w-2xl">
-            View full attendee profiles, track live station milestones, and perform real-time profile edits.
+          <p className="text-xs text-[#64748B] mt-1">
+            Total registered: {participants.length}
           </p>
         </div>
 
-        {/* Action CTAs */}
-        <div className="flex items-center gap-3 w-full md:w-auto">
+        <div className="flex items-center gap-2">
           <Button
             onClick={() => navigate(`/admin/conference/${conferenceId}/upload`)}
-            variant="outline"
-            size="md"
-            leftIcon={<UploadCloud className="w-4 h-4" />}
+            variant="secondary"
+            size="sm"
+            leftIcon={<Upload className="w-3.5 h-3.5" />}
           >
-            Import Roster
+            Import Data
           </Button>
 
           <Button
             onClick={() => navigate(`/admin/conference/${conferenceId}/add-delegate`)}
             variant="primary"
-            size="md"
-            leftIcon={<UserPlus className="w-4 h-4" />}
+            size="sm"
+            leftIcon={<UserPlus className="w-3.5 h-3.5" />}
           >
-            Add Delegate
+            Add Participant
           </Button>
         </div>
       </div>
 
-      {/* ============================================================== */}
       {/* SEARCH & FILTERS BAR */}
-      {/* ============================================================== */}
-      <div className="bg-white p-4 rounded-2xl border border-slate-200/90 shadow-2xs flex flex-col md:flex-row items-center gap-4">
-        {/* Instant Search Bar */}
+      <div className="flex flex-col sm:flex-row items-center gap-3">
         <SearchBar
           searchQuery={searchQuery}
           setSearchQuery={setSearchQuery}
@@ -163,13 +139,11 @@ const RegisteredList = () => {
           }}
         />
 
-        {/* Category Filter Select */}
-        <div className="flex items-center gap-2.5 w-full md:w-auto">
-          <Filter className="w-4 h-4 text-slate-400 shrink-0" />
+        <div className="flex items-center gap-2 w-full sm:w-auto">
           <select
             value={selectedCategory}
             onChange={(e) => setSelectedCategory(e.target.value)}
-            className="h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all cursor-pointer min-w-[170px]"
+            className="h-9 px-3 bg-white border border-[#CBD5E1] rounded-lg text-xs font-semibold text-[#0F172A] outline-none focus:border-[#0F172A] cursor-pointer shadow-2xs min-w-[150px]"
           >
             <option value="">All Categories</option>
             {uniqueCategories.map((cat) => (
@@ -185,31 +159,19 @@ const RegisteredList = () => {
                 setSearchQuery("");
                 setSelectedCategory("");
               }}
-              className="text-xs font-bold text-rose-600 hover:text-rose-700 bg-rose-50 hover:bg-rose-100 px-3 py-2 rounded-xl transition-colors whitespace-nowrap"
+              className="text-xs text-slate-500 hover:text-[#0F172A] px-2 py-1"
             >
-              Reset Filters
+              Reset
             </button>
           )}
         </div>
-
-        {/* Total Roster Pill */}
-        <div className="hidden lg:flex items-center gap-2 pl-3 border-l border-slate-200 text-xs font-bold text-slate-500 shrink-0">
-          <span>Displaying:</span>
-          <Badge variant="primary" size="md">
-            {filtered.length} of {participants.length}
-          </Badge>
-        </div>
       </div>
 
-      {/* ============================================================== */}
-      {/* DATA TABLE & SKELETON STATES */}
-      {/* ============================================================== */}
+      {/* TABLE */}
       {loading ? (
-        <div className="bg-white rounded-2xl border border-slate-200/90 p-8 shadow-xs text-center space-y-3">
-          <RefreshCw className="w-6 h-6 animate-spin text-blue-600 mx-auto" />
-          <p className="text-xs font-semibold text-slate-600">
-            Fetching latest delegate records from MongoDB cluster...
-          </p>
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-8 text-center space-y-2">
+          <RefreshCw className="w-5 h-5 animate-spin text-slate-500 mx-auto" />
+          <p className="text-xs text-[#64748B]">Loading participants...</p>
         </div>
       ) : filtered.length > 0 ? (
         <DelegateTable data={filtered} />
@@ -217,16 +179,16 @@ const RegisteredList = () => {
         <EmptyState
           title={
             searchQuery || selectedCategory
-              ? "No delegates match your filter"
-              : "No delegates registered in this workspace"
+              ? "No participants match your filter"
+              : "No participants registered yet"
           }
           description={
             searchQuery || selectedCategory
               ? "Try adjusting your search query or reset the category filter."
-              : "Add walk-in delegates manually or upload a batch spreadsheet (.XLSX) to populate this roster."
+              : "Add walk-in attendees or upload a spreadsheet roster to get started."
           }
           actionLabel={
-            searchQuery || selectedCategory ? "Clear Filters" : "Add First Delegate"
+            searchQuery || selectedCategory ? "Clear Filters" : "Add Participant"
           }
           onAction={() => {
             if (searchQuery || selectedCategory) {

@@ -1,5 +1,5 @@
 import React from "react";
-import { Users, CheckCircle, Award, Package, Printer } from "lucide-react";
+import { Users, CheckCircle, Printer, Package, Award } from "lucide-react";
 
 interface TopStatsProps {
   total: number;
@@ -25,49 +25,34 @@ export const TopStats: React.FC<TopStatsProps> = ({
 
   const stats = [
     {
-      title: "Total Delegates",
+      title: "Total Registrations",
       value: total,
-      subtext: "Total Registered in Workspace",
-      badge: `${total} Records`,
-      badgeColor: "bg-blue-50 text-blue-700 border-blue-200",
-      icon: <Users className="w-5 h-5" />,
-      iconBox: "bg-blue-50 text-blue-600 border-blue-100",
+      subtext: "Total registered delegates",
+      icon: <Users className="w-4 h-4 text-slate-600" />,
     },
     {
-      title: "Checked In (Entry)",
+      title: "Checked In",
       value: checkedIn,
-      subtext: `${checkInRate}% Overall Attendance`,
-      badge: `${checkInRate}% Rate`,
-      badgeColor: "bg-emerald-50 text-emerald-700 border-emerald-200",
-      icon: <CheckCircle className="w-5 h-5" />,
-      iconBox: "bg-emerald-50 text-emerald-600 border-emerald-100",
+      subtext: `${checkInRate}% attendance rate`,
+      icon: <CheckCircle className="w-4 h-4 text-[#0F766E]" />,
     },
     {
       title: "Badges Printed",
       value: printed,
-      subtext: `${printRate}% Badges Issued`,
-      badge: `${total - printed} Pending`,
-      badgeColor: "bg-indigo-50 text-indigo-700 border-indigo-200",
-      icon: <Printer className="w-5 h-5" />,
-      iconBox: "bg-indigo-50 text-indigo-600 border-indigo-100",
+      subtext: `${printRate}% printed (${total - printed} pending)`,
+      icon: <Printer className="w-4 h-4 text-slate-600" />,
     },
     {
-      title: "Kit Bags Distributed",
+      title: "Kitbags Distributed",
       value: kitbagCollected,
-      subtext: `${kitbagRate}% Bags Claimed`,
-      badge: `${total - kitbagCollected} Remaining`,
-      badgeColor: "bg-amber-50 text-amber-800 border-amber-200",
-      icon: <Package className="w-5 h-5" />,
-      iconBox: "bg-amber-50 text-amber-600 border-amber-100",
+      subtext: `${kitbagRate}% collected (${total - kitbagCollected} remaining)`,
+      icon: <Package className="w-4 h-4 text-slate-600" />,
     },
     {
       title: "Certificates Issued",
       value: certificateGiven,
-      subtext: `${certRate}% Claim Rate`,
-      badge: `${certificateGiven} Delivered`,
-      badgeColor: "bg-purple-50 text-purple-700 border-purple-200",
-      icon: <Award className="w-5 h-5" />,
-      iconBox: "bg-purple-50 text-purple-600 border-purple-100",
+      subtext: `${certRate}% delivered`,
+      icon: <Award className="w-4 h-4 text-slate-600" />,
     },
   ];
 
@@ -76,38 +61,28 @@ export const TopStats: React.FC<TopStatsProps> = ({
       {stats.map((item, i) => (
         <div
           key={i}
-          className="bg-white p-5 rounded-2xl border border-slate-200/90 shadow-2xs hover:shadow-xs transition-all duration-200 flex flex-col justify-between"
+          className="bg-white p-4 rounded-xl border border-[#E2E8F0] shadow-2xs flex flex-col justify-between"
         >
-          <div className="flex items-start justify-between gap-3">
-            <div className="space-y-1">
-              <span className="text-[11px] font-bold text-slate-500 uppercase tracking-wider block">
-                {item.title}
-              </span>
-              {isLoading ? (
-                <div className="h-8 w-16 bg-slate-100 animate-pulse rounded-lg mt-1" />
-              ) : (
-                <div className="text-2xl font-black text-slate-900 tracking-tight mt-1">
-                  {item.value.toLocaleString()}
-                </div>
-              )}
-            </div>
-
-            <div
-              className={`w-11 h-11 rounded-xl border flex items-center justify-center shrink-0 ${item.iconBox}`}
-            >
+          <div className="flex items-start justify-between gap-2">
+            <span className="text-xs font-medium text-[#64748B]">
+              {item.title}
+            </span>
+            <div className="w-7 h-7 rounded-md bg-slate-50 border border-slate-200/80 flex items-center justify-center shrink-0">
               {item.icon}
             </div>
           </div>
 
-          <div className="mt-4 pt-3 border-t border-slate-100 flex items-center justify-between text-xs">
-            <span className="text-slate-500 text-[11px] font-medium truncate">
+          <div className="mt-3">
+            {isLoading ? (
+              <div className="h-7 w-16 bg-slate-100 animate-pulse rounded" />
+            ) : (
+              <div className="text-2xl font-bold text-[#0F172A] tracking-tight">
+                {item.value.toLocaleString()}
+              </div>
+            )}
+            <p className="text-[11px] text-[#64748B] mt-1">
               {item.subtext}
-            </span>
-            <span
-              className={`px-2 py-0.5 rounded-md text-[10px] font-bold border shrink-0 ${item.badgeColor}`}
-            >
-              {item.badge}
-            </span>
+            </p>
           </div>
         </div>
       ))}

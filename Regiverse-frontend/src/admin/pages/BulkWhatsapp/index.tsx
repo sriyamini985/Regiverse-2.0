@@ -1,16 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { useParams, Link } from "react-router-dom";
-import {
-  MessageSquare,
-  Send,
-  Users,
-  CheckCircle2,
-  AlertCircle,
-  ChevronRight,
-  Phone,
-  Info,
-} from "lucide-react";
-import { Button, Card, Badge } from "../../components/ui";
+import { ChevronRight, CheckCircle2, AlertCircle, Phone } from "lucide-react";
+import { Button } from "../../components/ui";
 
 interface Participant {
   _id: string;
@@ -99,11 +90,11 @@ const BulkWhatsapp = () => {
   const sendWhatsapp = async () => {
     try {
       if (!message.trim()) {
-        alert("Please enter a WhatsApp message body");
+        alert("Please enter a WhatsApp message.");
         return;
       }
       if (filteredParticipants.length === 0) {
-        alert("No recipients selected based on the target filters");
+        alert("No recipients selected based on the target filters.");
         return;
       }
 
@@ -127,18 +118,18 @@ const BulkWhatsapp = () => {
       const data = await response.json();
 
       if (!response.ok) {
-        throw new Error(data.message || "Failed to dispatch WhatsApp broadcast");
+        throw new Error(data.message || "Failed to send WhatsApp broadcast");
       }
 
       setStatusAlert({
         type: "success",
-        text: `WhatsApp broadcast completed! Sent: ${data.sent} | Failed: ${data.failed}`,
+        text: `WhatsApp broadcast sent. Sent: ${data.sent} | Failed: ${data.failed}`,
       });
     } catch (err: any) {
       console.log(err);
       setStatusAlert({
         type: "error",
-        text: err.message || "Failed to transmit WhatsApp broadcast",
+        text: err.message || "Failed to transmit broadcast",
       });
     } finally {
       setLoading(false);
@@ -146,97 +137,75 @@ const BulkWhatsapp = () => {
   };
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-5 max-w-6xl mx-auto">
       {/* BREADCRUMB */}
-      <div className="flex items-center gap-2 text-xs font-semibold text-slate-500">
-        <Link to="/admin/conferences" className="hover:text-slate-900 transition-colors">
-          Event Ecosystem
+      <div className="flex items-center gap-1.5 text-xs text-[#64748B]">
+        <Link to="/admin/conferences" className="hover:text-[#0F172A]">
+          Events
         </Link>
         <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
         <Link
           to={`/admin/conference/${conferenceId}`}
-          className="hover:text-slate-900 transition-colors"
+          className="hover:text-[#0F172A]"
         >
-          Workspace Hub
+          Manage Event
         </Link>
         <ChevronRight className="w-3.5 h-3.5 text-slate-400" />
-        <span className="text-slate-900 font-bold">Bulk WhatsApp</span>
+        <span className="font-semibold text-[#0F172A]">WhatsApp Broadcast</span>
       </div>
 
-      {/* TOP HEADER */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-6 md:p-8 shadow-xs flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+      {/* HEADER */}
+      <div className="flex items-center justify-between">
         <div>
-          <div className="flex items-center gap-2.5">
-            <span className="px-2.5 py-1 rounded-md bg-emerald-50 text-emerald-700 text-xs font-bold uppercase tracking-wider border border-emerald-200/70">
-              Direct Push Channel
-            </span>
-            <span className="font-mono text-xs bg-slate-100 text-slate-600 px-2 py-0.5 rounded border border-slate-200">
-              {conferenceId}
-            </span>
-          </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-2">
-            Bulk WhatsApp Messaging Center
+          <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">
+            WhatsApp Broadcast
           </h1>
-          <p className="text-sm font-medium text-slate-500 mt-1 max-w-2xl">
-            Dispatch urgent timetable changes, digital passes, and instant alerts directly to verified attendee smartphones.
+          <p className="text-xs text-[#64748B] mt-0.5">
+            Send WhatsApp notifications to participants.
           </p>
         </div>
 
-        {/* Selected Count */}
-        <div className="flex items-center gap-3 bg-emerald-50/70 border border-emerald-200/80 px-5 py-3 rounded-2xl shadow-2xs">
-          <div className="w-10 h-10 rounded-xl bg-emerald-600 text-white flex items-center justify-center font-bold">
-            <Users className="w-5 h-5" />
-          </div>
-          <div>
-            <p className="text-[10px] font-bold text-emerald-700 uppercase tracking-wider">
-              Selected Mobile Numbers
-            </p>
-            <p className="text-2xl font-black text-emerald-900 tracking-tight mt-0.5">
-              {filteredParticipants.length} of {participants.length}
-            </p>
-          </div>
+        <div className="text-xs text-[#64748B]">
+          Selected recipients: <strong className="text-[#0F172A]">{filteredParticipants.length}</strong> of {participants.length}
         </div>
       </div>
 
-      {/* FEEDBACK STATUS */}
+      {/* FEEDBACK */}
       {statusAlert && (
         <div
-          className={`p-4 rounded-2xl border flex items-center gap-3 text-xs font-semibold shadow-2xs ${
+          className={`p-3 rounded-lg border text-xs font-medium flex items-center gap-2 ${
             statusAlert.type === "success"
               ? "bg-emerald-50 text-emerald-800 border-emerald-200"
               : "bg-rose-50 text-rose-800 border-rose-200"
           }`}
         >
           {statusAlert.type === "success" ? (
-            <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
           ) : (
-            <AlertCircle className="w-5 h-5 text-rose-600 shrink-0" />
+            <AlertCircle className="w-4 h-4 text-rose-600 shrink-0" />
           )}
           <span>{statusAlert.text}</span>
         </div>
       )}
 
-      {/* MAIN TWO-COLUMN LAYOUT */}
-      <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+      {/* TWO-COLUMN LAYOUT */}
+      <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
         {/* COMPOSER (7 cols) */}
-        <div className="lg:col-span-7 bg-white rounded-2xl border border-slate-200/90 p-6 md:p-8 shadow-xs space-y-6">
-          <div className="flex items-center gap-2 border-b border-slate-100 pb-3">
-            <MessageSquare className="w-4 h-4 text-emerald-600" />
-            <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-              WhatsApp Broadcast Content
-            </h2>
-          </div>
+        <div className="lg:col-span-7 bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-2xs space-y-4">
+          <h2 className="text-xs font-semibold text-[#0F172A] uppercase tracking-wider border-b border-[#F1F5F9] pb-2">
+            Compose Message
+          </h2>
 
-          <div className="space-y-1.5">
-            <label className="block text-xs font-bold text-slate-700 uppercase tracking-wider">
-              Message Template Body *
+          <div className="space-y-1">
+            <label className="block text-xs font-medium text-[#0F172A]">
+              Message Text *
             </label>
             <textarea
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Hi {{name}}, your conference pass for REGIVERSE is confirmed. Please show this message at Hall Entry..."
-              rows={12}
-              className="w-full p-4 text-xs font-medium bg-white text-slate-900 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-emerald-500/20 focus:border-emerald-600 transition-all resize-y shadow-2xs placeholder:text-slate-400"
+              placeholder="Hi, your registration for REGIVERSE is confirmed..."
+              rows={11}
+              className="w-full p-3 text-xs bg-white text-[#0F172A] border border-[#CBD5E1] rounded-lg outline-none focus:border-[#0F172A] transition-colors resize-y"
               required
             />
           </div>
@@ -245,55 +214,41 @@ const BulkWhatsapp = () => {
             onClick={sendWhatsapp}
             disabled={loading || fetching || filteredParticipants.length === 0}
             isLoading={loading}
-            variant="primary"
-            size="lg"
-            className="w-full bg-emerald-600 hover:bg-emerald-700 focus:ring-emerald-500"
-            leftIcon={<Send className="w-4 h-4" />}
+            variant="teal"
+            size="md"
+            className="w-full"
           >
             {loading
-              ? "Transmitting WhatsApp Packets..."
-              : `Send WhatsApp to ${filteredParticipants.length} Numbers`}
+              ? "Sending..."
+              : `Send WhatsApp to ${filteredParticipants.length} Participants`}
           </Button>
-
-          <div className="bg-slate-50/80 rounded-xl p-4 border border-slate-200 text-xs text-slate-500 space-y-1">
-            <span className="font-bold text-slate-700 block">
-              💡 Message Formatting Tip:
-            </span>
-            <p>
-              Use *bold* for emphasis, _italic_ for notes, and ~strikethrough~ for corrections according to standard WhatsApp protocol.
-            </p>
-          </div>
         </div>
 
-        {/* AUDIENCE & ROSTER SIDEBAR (5 cols) */}
-        <div className="lg:col-span-5 space-y-6">
-          {/* Categories Selector */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs space-y-4">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Users className="w-4 h-4 text-emerald-600" />
-                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                  Target Categories
-                </h2>
-              </div>
-              <div className="flex items-center gap-2 text-xs font-bold">
+        {/* RECIPIENTS & PREVIEW (5 cols) */}
+        <div className="lg:col-span-5 space-y-4">
+          <div className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-2xs space-y-3">
+            <div className="flex items-center justify-between border-b border-[#F1F5F9] pb-2">
+              <h2 className="text-xs font-semibold text-[#0F172A] uppercase tracking-wider">
+                Recipient Categories
+              </h2>
+              <div className="flex items-center gap-2 text-xs">
                 <button
                   onClick={selectAllCategories}
-                  className="text-emerald-600 hover:text-emerald-700"
+                  className="text-slate-600 hover:text-[#0F172A] font-medium"
                 >
                   All
                 </button>
                 <span className="text-slate-300">|</span>
                 <button
                   onClick={selectNoneCategories}
-                  className="text-slate-400 hover:text-slate-600"
+                  className="text-slate-400 hover:text-slate-600 font-medium"
                 >
-                  Clear
+                  None
                 </button>
               </div>
             </div>
 
-            <div className="space-y-2 max-h-[220px] overflow-y-auto pr-1">
+            <div className="space-y-1.5 max-h-[200px] overflow-y-auto">
               {allCategoriesList.map((cat) => {
                 const isSelected = selectedCategories.includes(cat);
                 const count = participants.filter((p) => {
@@ -306,22 +261,22 @@ const BulkWhatsapp = () => {
                 return (
                   <label
                     key={cat}
-                    className={`flex items-center justify-between p-3 rounded-xl border text-xs font-semibold cursor-pointer transition-colors select-none ${
+                    className={`flex items-center justify-between p-2 rounded-lg border text-xs cursor-pointer select-none ${
                       isSelected
-                        ? "bg-emerald-50/60 border-emerald-200 text-emerald-900"
-                        : "bg-slate-50/60 border-slate-200 text-slate-700 hover:bg-slate-100"
+                        ? "bg-slate-50 border-slate-300 font-medium text-[#0F172A]"
+                        : "bg-white border-[#E2E8F0] text-slate-600 hover:bg-slate-50"
                     }`}
                   >
-                    <div className="flex items-center gap-2.5">
+                    <div className="flex items-center gap-2">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleCategory(cat)}
-                        className="w-4 h-4 accent-emerald-600 rounded cursor-pointer"
+                        className="w-3.5 h-3.5 rounded text-slate-900 focus:ring-0"
                       />
                       <span>{cat}</span>
                     </div>
-                    <span className="text-[11px] font-bold px-2 py-0.5 rounded-md bg-white border border-slate-200 text-slate-600">
+                    <span className="text-[11px] text-slate-400">
                       {count}
                     </span>
                   </label>
@@ -330,48 +285,27 @@ const BulkWhatsapp = () => {
             </div>
           </div>
 
-          {/* Audience Preview List */}
-          <div className="bg-white rounded-2xl border border-slate-200/90 p-6 shadow-xs flex flex-col h-[320px]">
-            <div className="flex items-center justify-between border-b border-slate-100 pb-3 mb-3">
-              <h2 className="text-xs font-bold text-slate-700 uppercase tracking-wider">
-                Audience Preview
-              </h2>
-              <span className="text-[11px] font-bold text-slate-500">
-                {filteredParticipants.length} Queued
-              </span>
-            </div>
+          {/* PREVIEW OF NUMBERS */}
+          <div className="bg-white rounded-xl border border-[#E2E8F0] p-4 shadow-2xs space-y-2">
+            <h2 className="text-xs font-semibold text-[#0F172A] uppercase tracking-wider">
+              Sample Recipients ({filteredParticipants.length})
+            </h2>
 
-            {fetching ? (
-              <div className="flex-1 flex items-center justify-center text-xs font-bold text-emerald-600 animate-pulse">
-                Synchronizing audience...
-              </div>
-            ) : filteredParticipants.length === 0 ? (
-              <div className="flex-1 flex items-center justify-center text-xs text-slate-400 font-medium">
-                No recipients match current category filter.
-              </div>
-            ) : (
-              <div className="flex-1 overflow-y-auto space-y-2 pr-1">
-                {filteredParticipants.slice(0, 40).map((p) => (
-                  <div
-                    key={p._id}
-                    className="p-2.5 rounded-xl bg-slate-50 border border-slate-100 flex items-center justify-between text-xs"
-                  >
-                    <div className="min-w-0 flex-1">
-                      <p className="font-bold text-slate-800 truncate">
-                        {p.name || "Unnamed"}
-                      </p>
-                      <p className="text-[11px] font-mono text-slate-500 flex items-center gap-1 mt-0.5">
-                        <Phone className="w-2.5 h-2.5" />
-                        <span>{p.phone || "No phone number"}</span>
-                      </p>
-                    </div>
-                    <span className="text-[10px] font-bold px-2 py-0.5 bg-white border border-slate-200 rounded text-slate-600 shrink-0">
-                      {getParticipantCategory(p)}
-                    </span>
-                  </div>
-                ))}
-              </div>
-            )}
+            <div className="max-h-[160px] overflow-y-auto space-y-1.5 pr-1">
+              {filteredParticipants.slice(0, 25).map((p) => (
+                <div
+                  key={p._id}
+                  className="flex items-center justify-between p-1.5 text-xs text-slate-600 border-b border-slate-100 last:border-0"
+                >
+                  <span className="truncate max-w-[150px] font-medium text-[#0F172A]">
+                    {p.name}
+                  </span>
+                  <span className="font-mono text-[11px] text-slate-500">
+                    {p.phone || "No phone"}
+                  </span>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>

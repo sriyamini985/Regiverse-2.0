@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from "react";
-import { Outlet, Link, useLocation, useNavigate, useParams } from "react-router-dom";
+import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Calendar,
   Users,
   UserPlus,
-  UploadCloud,
+  Upload,
   Mail,
   MessageSquare,
   QrCode,
@@ -14,37 +14,56 @@ import {
   X,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
-  Layers,
-  ExternalLink,
-  ShieldCheck,
-  CheckCircle2,
+  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useConference } from "../../contexts/ConferenceContext";
+import { API_URL } from "../../config/api";
 
 export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [conferences, setConferences] = useState<any[]>([]);
+
   const location = useLocation();
   const navigate = useNavigate();
   const { user, logout } = useAuth();
-  const { currentConferenceId } = useConference();
+  const { currentConferenceId, setCurrentConferenceId } = useConference();
 
-  // Extract conferenceId from pathname if present (e.g. /admin/conference/xyz-123 or /conference/xyz-123)
+  // Extract active conference identifier from URL if present
   const pathParts = location.pathname.split("/");
   const confIndex = pathParts.indexOf("conference");
   const urlConferenceId = confIndex !== -1 && pathParts[confIndex + 1] ? pathParts[confIndex + 1] : null;
-  const activeConferenceId = urlConferenceId || currentConferenceId || localStorage.getItem("lastConferenceId");
 
-  // Save last visited conference
+  // Active event ID priority: URL param -> Context -> LocalStorage -> first available event
+  const activeEventId =
+    urlConferenceId ||
+    currentConferenceId ||
+    localStorage.getItem("lastConferenceId") ||
+    (conferences.length > 0 ? conferences[0].slug || conferences[0]._id : "");
+
+  // Load available events for topbar event selector
+  useEffect(() => {
+    fetch(`${API_URL}/api/conferences`)
+      .then((res) => res.json())
+      .then((data) => {
+        const list = Array.isArray(data) ? data : [];
+        setConferences(list);
+        if (!activeEventId && list.length > 0) {
+          const firstId = list[0].slug || list[0]._id;
+          localStorage.setItem("lastConferenceId", firstId);
+        }
+      })
+      .catch((err) => console.error("Failed to load events", err));
+  }, []);
+
   useEffect(() => {
     if (urlConferenceId) {
       localStorage.setItem("lastConferenceId", urlConferenceId);
+      if (setCurrentConferenceId) setCurrentConferenceId(urlConferenceId);
     }
-  }, [urlConferenceId]);
+  }, [urlConferenceId, setCurrentConferenceId]);
 
-  // Close mobile drawer on route change
   useEffect(() => {
     setMobileMenuOpen(false);
   }, [location.pathname]);
@@ -57,82 +76,107 @@ export default function AdminLayout() {
   // Determine current page title
   const getPageTitle = () => {
     const p = location.pathname;
-    if (p.includes("/dashboard")) return "Executive Onsite Analytics";
-    if (p.includes("/conferences")) return "Event Workspaces";
-    if (p.includes("/registered-list")) return "Registered Delegates";
-    if (p.includes("/add-delegate")) return "Participant Registration";
-    if (p.includes("/upload")) return "Batch Import Database";
-    if (p.includes("/bulk-email")) return "Bulk Email Broadcast";
-    if (p.includes("/bulk-whatsapp")) return "Bulk WhatsApp Messaging";
-    if (p.includes("/qr-generator")) return "QR Code Generator";
-    if (p.includes("/conference/")) return "Staff Operations Hub";
-    return "Admin Command Center";
+    if (p.includes("/dashboard")) return "Dashboard";
+    if (p.includes("/conferences")) return "Events";
+    if (p.includes("/registered-list")) return "Participants";
+    if (p.includes("/add-delegate")) return "Add Participant";
+    if (p.includes("/upload")) return "Import Database";
+    if (p.includes("/bulk-email")) return "Email Broadcast";
+    if (p.includes("/bulk-whatsapp")) return "WhatsApp Broadcast";
+    if (p.includes("/qr-generator")) return "Badges & QR";
+    if (p.includes("/conference/")) return "Manage Event";
+    return "Dashboard";
+  };
+
+  // Switch event from topbar
+  const handleEventChange = (newEventId: string) => {
+    if (!newEventId) return;
+    localStorage.setItem("lastConferenceId", newEventId);
+    if (setCurrentConferenceId) setCurrentConferenceId(newEventId);
+
+    const p = location.pathname;
+    if (p.includes("/registered-list")) {
+      navigate(`/admin/conference/${newEventId}/registered-list`);
+    } else if (p.includes("/add-delegate")) {
+      navigate(`/admin/conference/${newEventId}/add-delegate`);
+    } else if (p.includes("/upload")) {
+      navigate(`/admin/conference/${newEventId}/upload`);
+    } else if (p.includes("/bulk-email")) {
+      navigate(`/admin/conference/${newEventId}/bulk-email`);
+    } else if (p.includes("/bulk-whatsapp")) {
+      navigate(`/admin/conference/${newEventId}/bulk-whatsapp`);
+    } else if (p.includes("/conference/")) {
+      navigate(`/admin/conference/${newEventId}`);
+    } else if (p.includes("/dashboard")) {
+      navigate(`/admin/dashboard?conferenceId=${newEventId}`);
+    }
   };
 
   const navSections = [
     {
-      label: "Platform Overview",
+      label: "MAIN",
       items: [
         {
           title: "Dashboard",
-          href: "/admin/dashboard",
+          href: activeEventId
+            ? `/admin/dashboard?conferenceId=${activeEventId}`
+            : "/admin/dashboard",
           icon: LayoutDashboard,
-          active: location.pathname === "/admin/dashboard",
+          active: location.pathname.includes("/dashboard"),
         },
         {
-          title: "Event Ecosystem",
+          title: "Events",
           href: "/admin/conferences",
           icon: Calendar,
-          active: location.pathname.includes("/admin/conferences"),
+          active: location.pathname.includes("/conferences"),
         },
       ],
     },
-    ...(activeConferenceId
+    ...(activeEventId
       ? [
           {
-            label: "Active Workspace",
-            badge: "Live",
+            label: "EVENT MANAGEMENT",
             items: [
               {
-                title: "Operations Hub",
-                href: `/admin/conference/${activeConferenceId}`,
-                icon: Layers,
+                title: "Manage Event",
+                href: `/admin/conference/${activeEventId}`,
+                icon: Calendar,
                 active:
-                  location.pathname === `/admin/conference/${activeConferenceId}` ||
-                  location.pathname === `/conference/${activeConferenceId}`,
+                  location.pathname === `/admin/conference/${activeEventId}` ||
+                  location.pathname === `/conference/${activeEventId}`,
               },
               {
-                title: "Registered List",
-                href: `/admin/conference/${activeConferenceId}/registered-list`,
+                title: "Participants",
+                href: `/admin/conference/${activeEventId}/registered-list`,
                 icon: Users,
                 active: location.pathname.includes("/registered-list"),
               },
               {
-                title: "Add Delegate",
-                href: `/admin/conference/${activeConferenceId}/add-delegate`,
+                title: "Add Participant",
+                href: `/admin/conference/${activeEventId}/add-delegate`,
                 icon: UserPlus,
                 active: location.pathname.includes("/add-delegate"),
               },
               {
-                title: "Import Database",
-                href: `/admin/conference/${activeConferenceId}/upload`,
-                icon: UploadCloud,
+                title: "Import Data",
+                href: `/admin/conference/${activeEventId}/upload`,
+                icon: Upload,
                 active: location.pathname.includes("/upload"),
               },
             ],
           },
           {
-            label: "Communication",
+            label: "COMMUNICATION",
             items: [
               {
-                title: "Bulk Email",
-                href: `/admin/conference/${activeConferenceId}/bulk-email`,
+                title: "Email",
+                href: `/admin/conference/${activeEventId}/bulk-email`,
                 icon: Mail,
                 active: location.pathname.includes("/bulk-email"),
               },
               {
-                title: "Bulk WhatsApp",
-                href: `/admin/conference/${activeConferenceId}/bulk-whatsapp`,
+                title: "WhatsApp",
+                href: `/admin/conference/${activeEventId}/bulk-whatsapp`,
                 icon: MessageSquare,
                 active: location.pathname.includes("/bulk-whatsapp"),
               },
@@ -141,10 +185,10 @@ export default function AdminLayout() {
         ]
       : []),
     {
-      label: "Tools & Utilities",
+      label: "DOCUMENTS & TOOLS",
       items: [
         {
-          title: "QR Code Generator",
+          title: "Badges & QR",
           href: "/admin/qr-generator",
           icon: QrCode,
           active: location.pathname.includes("/qr-generator"),
@@ -154,176 +198,125 @@ export default function AdminLayout() {
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 text-slate-800 font-sans flex flex-col lg:flex-row antialiased">
+    <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans flex flex-col lg:flex-row antialiased">
       {/* ============================================================== */}
-      {/* DESKTOP PERSISTENT SIDEBAR */}
+      {/* DESKTOP SIDEBAR */}
       {/* ============================================================== */}
       <aside
-        className={`hidden lg:flex flex-col bg-white border-r border-slate-200/90 sticky top-0 h-screen transition-all duration-300 z-40 select-none ${
-          collapsed ? "w-20" : "w-64"
+        className={`hidden lg:flex flex-col bg-white border-r border-[#E2E8F0] sticky top-0 h-screen transition-all duration-200 z-40 select-none ${
+          collapsed ? "w-16" : "w-60"
         }`}
       >
-        {/* Brand Header */}
-        <div className="h-16 px-5 border-b border-slate-100 flex items-center justify-between shrink-0">
-          <Link
-            to="/admin/conferences"
-            className="flex items-center gap-3 overflow-hidden group"
-          >
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center text-white font-extrabold text-lg shadow-sm shadow-blue-500/20 group-hover:bg-blue-700 transition-colors shrink-0">
+        {/* Brand */}
+        <div className="h-14 px-4 border-b border-[#F1F5F9] flex items-center justify-between shrink-0">
+          <Link to="/admin/conferences" className="flex items-center gap-2.5 overflow-hidden">
+            <div className="w-8 h-8 rounded-lg bg-[#0F172A] flex items-center justify-center text-white font-bold text-sm shrink-0">
               R
             </div>
             {!collapsed && (
-              <div className="flex flex-col">
-                <span className="font-extrabold text-base tracking-tight text-slate-900 leading-tight">
+              <div>
+                <span className="font-bold text-sm tracking-tight text-[#0F172A] block leading-tight">
                   REGIVERSE
                 </span>
-                <span className="text-[10px] font-bold text-blue-600 uppercase tracking-wider">
-                  Admin Platform
+                <span className="text-[10px] text-[#64748B] block leading-tight">
+                  Conference Management
                 </span>
               </div>
             )}
           </Link>
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="w-7 h-7 rounded-lg bg-slate-100 hover:bg-slate-200 text-slate-600 flex items-center justify-center transition-colors"
+            className="w-6 h-6 rounded text-slate-400 hover:text-slate-700 hover:bg-slate-100 flex items-center justify-center transition-colors"
             title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
-            {collapsed ? (
-              <ChevronRight className="w-4 h-4" />
-            ) : (
-              <ChevronLeft className="w-4 h-4" />
-            )}
+            {collapsed ? <ChevronRight className="w-3.5 h-3.5" /> : <ChevronLeft className="w-3.5 h-3.5" />}
           </button>
         </div>
 
         {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto py-5 px-3 space-y-6 scrollbar-thin">
+        <div className="flex-1 overflow-y-auto py-4 px-2 space-y-5">
           {navSections.map((section, idx) => (
-            <div key={idx} className="space-y-1">
+            <div key={idx} className="space-y-0.5">
               {!collapsed && (
-                <div className="px-3 pb-1 flex items-center justify-between">
-                  <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                    {section.label}
-                  </span>
-                  {section.badge && (
-                    <span className="px-1.5 py-0.5 rounded text-[9px] font-bold bg-emerald-50 text-emerald-700 border border-emerald-200">
-                      {section.badge}
-                    </span>
-                  )}
+                <div className="px-3 pb-1 text-[10px] font-semibold text-[#64748B] uppercase tracking-wider">
+                  {section.label}
                 </div>
               )}
-              <div className="space-y-0.5">
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      title={collapsed ? item.title : undefined}
-                      className={`group flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all duration-150 ${
-                        item.active
-                          ? "bg-blue-50/80 text-blue-700 shadow-xs border border-blue-100/60"
-                          : "text-slate-600 hover:text-slate-900 hover:bg-slate-100/80"
-                      } ${collapsed ? "justify-center" : ""}`}
-                    >
-                      <Icon
-                        className={`w-4 h-4 shrink-0 transition-colors ${
-                          item.active
-                            ? "text-blue-600"
-                            : "text-slate-400 group-hover:text-slate-700"
-                        }`}
-                      />
-                      {!collapsed && (
-                        <span className="truncate">{item.title}</span>
-                      )}
-                    </Link>
-                  );
-                })}
-              </div>
+              {section.items.map((item) => {
+                const Icon = item.icon;
+                return (
+                  <Link
+                    key={item.href}
+                    to={item.href}
+                    title={collapsed ? item.title : undefined}
+                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                      item.active
+                        ? "bg-slate-100 text-[#0F172A] font-semibold"
+                        : "text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50"
+                    } ${collapsed ? "justify-center" : ""}`}
+                  >
+                    <Icon className="w-4 h-4 shrink-0 text-slate-500" />
+                    {!collapsed && <span className="truncate">{item.title}</span>}
+                  </Link>
+                );
+              })}
             </div>
           ))}
-
-          {/* AI-Ready Reserved Indicator */}
-          {!collapsed && (
-            <div className="p-3 bg-gradient-to-br from-indigo-50/60 via-purple-50/40 to-blue-50/60 rounded-2xl border border-indigo-100/70 text-xs">
-              <div className="flex items-center gap-2 text-indigo-700 font-bold mb-1">
-                <Sparkles className="w-3.5 h-3.5 text-indigo-600" />
-                <span>AI Ops Engine</span>
-              </div>
-              <p className="text-[11px] text-slate-600 leading-tight">
-                Architected for autonomous registration insights & agentic operations.
-              </p>
-              <div className="mt-2 flex items-center gap-1.5 text-[10px] text-indigo-600 font-semibold">
-                <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 animate-pulse" />
-                <span>System Ready</span>
-              </div>
-            </div>
-          )}
         </div>
 
-        {/* User Profile & Logout Bottom Bar */}
-        <div className="p-3 border-t border-slate-100 bg-slate-50/50 shrink-0">
+        {/* User Profile / Logout */}
+        <div className="p-3 border-t border-[#F1F5F9] bg-white shrink-0">
           <div
-            className={`flex items-center gap-3 p-2 rounded-xl bg-white border border-slate-200/80 shadow-xs ${
+            className={`flex items-center gap-2.5 p-2 rounded-lg ${
               collapsed ? "justify-center" : ""
             }`}
           >
-            <div className="w-8 h-8 rounded-lg bg-slate-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
-              <ShieldCheck className="w-4 h-4 text-emerald-400" />
+            <div className="w-7 h-7 rounded-full bg-slate-200 text-slate-700 flex items-center justify-center text-xs font-bold shrink-0">
+              {(user?.email?.[0] || "A").toUpperCase()}
             </div>
             {!collapsed && (
               <div className="flex-1 min-w-0">
-                <p className="text-xs font-bold text-slate-900 truncate">
-                  Admin Console
-                </p>
-                <p className="text-[11px] text-slate-400 truncate">
+                <p className="text-xs font-medium text-[#0F172A] truncate">
                   {user?.email || "admin@regiverse.com"}
                 </p>
+                <p className="text-[10px] text-[#64748B] truncate">Administrator</p>
               </div>
             )}
             <button
               onClick={handleLogout}
-              className="p-1.5 text-slate-400 hover:text-rose-600 hover:bg-rose-50 rounded-lg transition-colors"
+              className="p-1 text-slate-400 hover:text-rose-600 transition-colors"
               title="Sign Out"
             >
-              <LogOut className="w-4 h-4" />
+              <LogOut className="w-3.5 h-3.5" />
             </button>
           </div>
         </div>
       </aside>
 
       {/* ============================================================== */}
-      {/* MOBILE TOPBAR + DRAWER */}
+      {/* MOBILE TOPBAR */}
       {/* ============================================================== */}
-      <div className="lg:hidden bg-white border-b border-slate-200 sticky top-0 z-50">
-        <div className="h-16 px-4 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-blue-600 flex items-center justify-center text-white font-extrabold text-sm">
+      <div className="lg:hidden bg-white border-b border-[#E2E8F0] sticky top-0 z-50">
+        <div className="h-14 px-4 flex items-center justify-between">
+          <div className="flex items-center gap-2.5">
+            <div className="w-7 h-7 rounded bg-[#0F172A] flex items-center justify-center text-white font-bold text-xs">
               R
             </div>
-            <div>
-              <span className="font-extrabold text-sm tracking-tight text-slate-900">
-                REGIVERSE
-              </span>
-              <span className="block text-[9px] font-bold text-blue-600 uppercase">
-                Admin Panel
-              </span>
-            </div>
+            <span className="font-bold text-sm text-[#0F172A]">REGIVERSE</span>
           </div>
           <button
             onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-            className="p-2 rounded-xl bg-slate-100 text-slate-700 hover:bg-slate-200 active:scale-95 transition-all"
-            aria-label="Toggle navigation menu"
+            className="p-1.5 rounded-lg text-slate-600 hover:bg-slate-100"
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
 
         {mobileMenuOpen && (
-          <div className="border-t border-slate-100 bg-white p-4 shadow-xl space-y-4 max-h-[80vh] overflow-y-auto">
+          <div className="border-t border-[#E2E8F0] bg-white p-3 space-y-3 max-h-[80vh] overflow-y-auto">
             {navSections.map((section, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-wider px-2">
+              <div key={idx} className="space-y-0.5">
+                <div className="text-[10px] font-semibold text-[#64748B] uppercase px-2">
                   {section.label}
                 </div>
                 {section.items.map((item) => {
@@ -332,13 +325,13 @@ export default function AdminLayout() {
                     <Link
                       key={item.href}
                       to={item.href}
-                      className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm font-semibold transition-colors ${
+                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium ${
                         item.active
-                          ? "bg-blue-50 text-blue-700"
-                          : "text-slate-700 hover:bg-slate-50"
+                          ? "bg-slate-100 text-[#0F172A] font-semibold"
+                          : "text-[#64748B] hover:bg-slate-50"
                       }`}
                     >
-                      <Icon className="w-4 h-4" />
+                      <Icon className="w-4 h-4 text-slate-500" />
                       <span>{item.title}</span>
                     </Link>
                   );
@@ -348,9 +341,9 @@ export default function AdminLayout() {
             <div className="pt-2 border-t border-slate-100">
               <button
                 onClick={handleLogout}
-                className="w-full flex items-center justify-center gap-2 p-3 text-sm font-bold text-rose-600 bg-rose-50 hover:bg-rose-100 rounded-xl transition-colors"
+                className="w-full flex items-center justify-center gap-2 py-2 text-xs font-semibold text-rose-600 hover:bg-rose-50 rounded-lg"
               >
-                <LogOut className="w-4 h-4" />
+                <LogOut className="w-3.5 h-3.5" />
                 <span>Sign Out</span>
               </button>
             </div>
@@ -359,53 +352,51 @@ export default function AdminLayout() {
       </div>
 
       {/* ============================================================== */}
-      {/* MAIN CONTENT AREA & TOPBAR */}
+      {/* MAIN CONTENT AREA */}
       {/* ============================================================== */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Top Header */}
-        <header className="hidden lg:flex h-16 bg-white/80 backdrop-blur-md border-b border-slate-200/80 px-8 items-center justify-between sticky top-0 z-30">
-          {/* Breadcrumb / Title */}
-          <div className="flex items-center gap-3">
-            <h1 className="text-base font-bold text-slate-900 tracking-tight">
+        {/* Simple Top Bar */}
+        <header className="hidden lg:flex h-14 bg-white border-b border-[#E2E8F0] px-6 items-center justify-between sticky top-0 z-30">
+          {/* Left: Page Title + Simple Event Selector */}
+          <div className="flex items-center gap-4">
+            <h1 className="text-base font-bold text-[#0F172A] tracking-tight">
               {getPageTitle()}
             </h1>
-            {activeConferenceId && (
-              <div className="flex items-center gap-2 pl-3 border-l border-slate-200">
-                <span className="text-[10px] font-bold text-slate-400 uppercase tracking-wider">
-                  Workspace:
-                </span>
-                <Link
-                  to={`/admin/conference/${activeConferenceId}`}
-                  className="px-2.5 py-1 rounded-lg bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-mono font-bold border border-blue-200/80 transition-colors flex items-center gap-1.5"
-                  title="View Workspace Hub"
+
+            {conferences.length > 0 && (
+              <div className="flex items-center gap-2 pl-4 border-l border-slate-200">
+                <span className="text-xs text-[#64748B] font-medium">Event:</span>
+                <select
+                  value={activeEventId}
+                  onChange={(e) => handleEventChange(e.target.value)}
+                  className="h-8 pl-2.5 pr-7 bg-slate-50 border border-[#CBD5E1] rounded-md text-xs font-semibold text-[#0F172A] outline-none focus:border-[#0F172A] cursor-pointer"
                 >
-                  <span>{activeConferenceId}</span>
-                  <ExternalLink className="w-3 h-3 opacity-60" />
-                </Link>
+                  {conferences.map((c) => (
+                    <option key={c._id} value={c.slug || c._id}>
+                      {c.name || c.title}
+                    </option>
+                  ))}
+                </select>
               </div>
             )}
           </div>
 
-          {/* Right Status & Meta Controls */}
-          <div className="flex items-center gap-4">
-            {/* Live Sync Status */}
-            <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold border border-emerald-200/70 shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Live Cloud Sync</span>
-            </div>
-
-            {/* Quick Workspace Switcher CTA */}
-            <Link
-              to="/admin/conferences"
-              className="text-xs font-semibold text-slate-600 hover:text-slate-900 bg-slate-100 hover:bg-slate-200/80 px-3 py-1.5 rounded-xl border border-slate-200 transition-colors"
+          {/* Right: Admin Account & Sign Out */}
+          <div className="flex items-center gap-4 text-xs text-[#64748B]">
+            <span className="font-medium text-[#0F172A]">
+              {user?.email || "admin@regiverse.com"}
+            </span>
+            <button
+              onClick={handleLogout}
+              className="text-xs font-medium text-slate-500 hover:text-[#0F172A] transition-colors"
             >
-              Switch Workspace
-            </Link>
+              Sign Out
+            </button>
           </div>
         </header>
 
-        {/* Main Content Body */}
-        <main className="flex-1 p-4 sm:p-6 lg:p-8 min-w-0">
+        {/* Page Content */}
+        <main className="flex-1 p-5 sm:p-6 lg:p-8 min-w-0">
           <Outlet />
         </main>
       </div>

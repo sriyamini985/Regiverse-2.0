@@ -1,25 +1,28 @@
 import React, { useEffect, useState } from "react";
-import { useSearchParams, Link } from "react-router-dom";
+import { useSearchParams, useNavigate } from "react-router-dom";
 import { useConferenceData } from "../../../hooks/useConferenceData";
 import { API_URL } from "../../../config/api";
 import * as XLSX from "xlsx";
-import { Download, RefreshCw, Layers, Calendar, ExternalLink } from "lucide-react";
+import { Download, Users, RefreshCw } from "lucide-react";
 import TopStats from "./components/TopStats";
 import DayTabs from "./components/DayTabs";
 import HighlightCards from "./components/HighlightCards";
 import ChartsSection from "./components/ChartsSection";
-import { Button, Select, Badge, EmptyState } from "../../components/ui";
+import { Button, EmptyState } from "../../components/ui";
 
 const Dashboard = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const navigate = useNavigate();
   const queryConfId = searchParams.get("conferenceId") || "";
 
   const [selectedDay, setSelectedDay] = useState("Day 1");
   const [conferences, setConferences] = useState<any[]>([]);
-  const [selectedConferenceId, setSelectedConferenceId] = useState(queryConfId);
+  const [selectedConferenceId, setSelectedConferenceId] = useState(
+    queryConfId || localStorage.getItem("lastConferenceId") || ""
+  );
   const [loadingConferences, setLoadingConferences] = useState(true);
 
-  // Fetch all conferences to populate selection dropdown
+  // Fetch conferences
   useEffect(() => {
     const fetchConfs = async () => {
       try {
@@ -29,13 +32,13 @@ const Dashboard = () => {
         const list = Array.isArray(data) ? data : [];
         setConferences(list);
 
-        // Auto-select conference if not set by query param
         if (!selectedConferenceId && list.length > 0) {
           const defaultId = list[0].slug || list[0]._id;
           setSelectedConferenceId(defaultId);
+          localStorage.setItem("lastConferenceId", defaultId);
         }
       } catch (err) {
-        console.error("Failed to fetch conferences list", err);
+        console.error("Failed to load events", err);
       } finally {
         setLoadingConferences(false);
       }
@@ -43,24 +46,31 @@ const Dashboard = () => {
     fetchConfs();
   }, []);
 
-  // Sync state if query parameter changes
   useEffect(() => {
     if (queryConfId) {
       setSelectedConferenceId(queryConfId);
+      localStorage.setItem("lastConferenceId", queryConfId);
     }
   }, [queryConfId]);
 
-  // Load real-time database stats using hook
-  const { participants, loading: loadingStats, refresh, stats } = useConferenceData(
+  // Load real-time stats
+  const { participants, loading: loadingStats, stats } = useConferenceData(
     selectedConferenceId || undefined
   );
 
-  const dayKey = selectedDay.toLowerCase().replace(" ", ""); // "day1"
+  const dayKey = selectedDay.toLowerCase().replace(" ", "");
   const mealsForDay = stats?.food?.[dayKey] || { breakfast: 0, lunch: 0, dinner: 0 };
 
   const activeConf = conferences.find(
     (c) => c._id === selectedConferenceId || c.slug === selectedConferenceId
   );
+
+  const handleConfChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const val = e.target.value;
+    setSelectedConferenceId(val);
+    setSearchParams({ conferenceId: val });
+    localStorage.setItem("lastConferenceId", val);
+  };
 
   const handleDownloadExcel = () => {
     if (!participants || participants.length === 0) {
@@ -88,135 +98,107 @@ const Dashboard = () => {
     XLSX.utils.book_append_sheet(workbook, worksheet, "Registration List");
 
     const cleanName = (activeConf?.name || activeConf?.title || "Event").replace(/\s+/g, "_");
-    const filename = `${cleanName}_Registration_List.xlsx`;
+    const filename = `${cleanName}_Registrations.xlsx`;
 
     XLSX.writeFile(workbook, filename);
   };
 
-  const handleConfChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
-    const val = e.target.value;
-    setSelectedConferenceId(val);
-    setSearchParams({ conferenceId: val });
-  };
-
   return (
-    <div className="space-y-8 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-7xl mx-auto">
       {/* ============================================================== */}
-      {/* TOP COMMAND HEADER */}
+      {/* PAGE HEADER */}
       {/* ============================================================== */}
-      <div className="bg-white rounded-2xl border border-slate-200/90 p-6 md:p-8 shadow-xs flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
           <div className="flex items-center gap-3">
-            <span className="px-2.5 py-1 rounded-md bg-blue-50 text-blue-700 text-xs font-bold uppercase tracking-wider border border-blue-200/70">
-              Operations Center
-            </span>
-            <div className="flex items-center gap-2 text-xs font-semibold text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md border border-emerald-200/70">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse" />
-              <span>Real-Time Stream</span>
-            </div>
+            <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">
+              Dashboard
+            </h1>
+
+            {conferences.length > 0 && (
+              <select
+                value={selectedConferenceId}
+                onChange={handleConfChange}
+                disabled={loadingConferences}
+                className="h-9 px-3 bg-white border border-[#CBD5E1] rounded-lg text-xs font-semibold text-[#0F172A] outline-none focus:border-[#0F172A] cursor-pointer shadow-2xs"
+              >
+                {conferences.map((c) => (
+                  <option key={c._id} value={c.slug || c._id}>
+                    {c.name || c.title}
+                  </option>
+                ))}
+              </select>
+            )}
           </div>
-          <h1 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight mt-2">
-            Onsite Analytics Dashboard
-          </h1>
-          <p className="text-sm font-medium text-slate-500 mt-1 max-w-2xl">
-            Live delegate counts, meal distribution, attendance records, and operational reporting.
+          <p className="text-xs text-[#64748B] mt-1">
+            Overview of your event and on-site activity.
           </p>
         </div>
 
         {/* Action Controls */}
-        <div className="flex flex-wrap items-end gap-3 w-full lg:w-auto">
-          {/* Workspace Selector */}
-          <div className="flex-1 sm:flex-initial min-w-[220px]">
-            <label className="block text-[11px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-              Select Workspace
-            </label>
-            <select
-              value={selectedConferenceId}
-              onChange={handleConfChange}
-              disabled={loadingConferences}
-              className="w-full h-11 px-3.5 bg-slate-50 border border-slate-200 rounded-xl text-xs font-bold text-slate-800 outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all cursor-pointer"
-            >
-              {conferences.map((c) => (
-                <option key={c._id} value={c.slug || c._id}>
-                  {c.name || c.title}
-                </option>
-              ))}
-              {conferences.length === 0 && !loadingConferences && (
-                <option value="">No conferences available</option>
-              )}
-            </select>
-          </div>
-
-          {/* Quick Hub Link */}
+        <div className="flex items-center gap-2">
           {selectedConferenceId && (
-            <Link
-              to={`/admin/conference/${selectedConferenceId}`}
-              className="h-11 px-4 bg-slate-100 hover:bg-slate-200/80 text-slate-700 text-xs font-bold rounded-xl border border-slate-200 flex items-center gap-1.5 transition-colors"
-              title="Open Workspace Terminal"
+            <Button
+              onClick={() => navigate(`/admin/conference/${selectedConferenceId}`)}
+              variant="secondary"
+              size="sm"
             >
-              <Layers className="w-4 h-4 text-slate-500" />
-              <span className="hidden sm:inline">Workspace Hub</span>
-            </Link>
+              Manage Event
+            </Button>
           )}
 
-          {/* Export Roster Button */}
           <Button
             onClick={handleDownloadExcel}
             disabled={loadingStats || participants.length === 0}
             variant="primary"
-            size="md"
-            leftIcon={<Download className="w-4 h-4" />}
-            className="flex-1 sm:flex-initial"
+            size="sm"
+            leftIcon={<Download className="w-3.5 h-3.5" />}
           >
-            Export Roster (.XLSX)
+            Export Roster
           </Button>
         </div>
       </div>
 
       {/* Syncing indicator */}
       {(loadingConferences || loadingStats) && (
-        <div className="bg-blue-50/80 border border-blue-200/70 p-3 rounded-xl flex items-center justify-center gap-2 text-xs font-semibold text-blue-700">
+        <div className="flex items-center gap-2 text-xs text-[#64748B] py-1">
           <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-          <span>Synchronizing live operational metrics with server...</span>
+          <span>Updating event data...</span>
         </div>
       )}
 
-      {/* Empty State if No Conferences */}
+      {/* Empty State if No Events */}
       {!loadingConferences && conferences.length === 0 ? (
         <EmptyState
-          title="No Event Workspaces Found"
-          description="Create your first conference workspace to start tracking real-time registrations and onsite operations."
-          actionLabel="Go to Event Ecosystem"
-          onAction={() => (window.location.href = "/admin/conferences")}
+          title="No Events Found"
+          description="Create your first event to start managing registrations and on-site attendance."
+          actionLabel="Create Event"
+          onAction={() => navigate("/admin/conferences")}
         />
       ) : (
         <>
           {/* ============================================================== */}
-          {/* KPI STATS SECTION */}
+          {/* 5 KPI STATS CARDS */}
           {/* ============================================================== */}
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                Registration & Onsite KPIs
-              </h2>
-              <span className="text-xs font-medium text-slate-400">
-                Auto-updates via WebSocket
-              </span>
-            </div>
-            <TopStats
-              total={stats?.total || 0}
-              checkedIn={stats?.checkedIn || 0}
-              printed={stats?.printed || 0}
-              certificateGiven={stats?.certificateGiven || 0}
-              kitbagCollected={stats?.kitbagCollected || 0}
-              isLoading={loadingStats}
-            />
-          </div>
+          <TopStats
+            total={stats?.total || 0}
+            checkedIn={stats?.checkedIn || 0}
+            printed={stats?.printed || 0}
+            certificateGiven={stats?.certificateGiven || 0}
+            kitbagCollected={stats?.kitbagCollected || 0}
+            isLoading={loadingStats}
+          />
 
           {/* ============================================================== */}
-          {/* MEAL DISTRIBUTION BY SCHEDULE DAY */}
+          {/* MEAL ATTENDANCE BY DAY */}
           {/* ============================================================== */}
-          <div className="space-y-4">
+          <div className="space-y-3 pt-2">
+            <div className="flex items-center justify-between">
+              <h2 className="text-sm font-semibold text-[#0F172A]">
+                Food & Meal Attendance
+              </h2>
+            </div>
+
             <DayTabs
               selectedDay={selectedDay}
               setSelectedDay={setSelectedDay}
@@ -230,19 +212,12 @@ const Dashboard = () => {
           </div>
 
           {/* ============================================================== */}
-          {/* OPERATIONAL SCAN DISTRIBUTION CHARTS */}
+          {/* ON-SITE ACTIVITY BREAKDOWN */}
           {/* ============================================================== */}
-          <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-sm font-bold text-slate-900 uppercase tracking-wider">
-                  Operational Scan Breakdown
-                </h2>
-                <p className="text-xs font-medium text-slate-500 mt-0.5">
-                  Real-time status across badges, kitbags, meals, certificates, and hall checkpoints.
-                </p>
-              </div>
-            </div>
+          <div className="space-y-3 pt-2">
+            <h2 className="text-sm font-semibold text-[#0F172A]">
+              On-Site Activity
+            </h2>
 
             <ChartsSection
               data={{

@@ -22,19 +22,19 @@ export const Card: React.FC<CardProps> = ({
 
   return (
     <div
-      className={`bg-white rounded-2xl border border-slate-200/90 shadow-xs transition-shadow duration-200 ${className}`}
+      className={`bg-white rounded-xl border border-[#E2E8F0] shadow-2xs ${className}`}
       {...props}
     >
       {hasHeader && (
-        <div className="px-6 py-5 border-b border-slate-100 flex items-center justify-between gap-4">
+        <div className="px-5 py-4 border-b border-[#F1F5F9] flex items-center justify-between gap-4">
           <div>
             {title && (
-              <h3 className="text-base font-bold text-slate-900 tracking-tight">
+              <h3 className="text-sm font-semibold text-[#0F172A] tracking-tight">
                 {title}
               </h3>
             )}
             {subtitle && (
-              <p className="text-xs font-medium text-slate-500 mt-0.5">
+              <p className="text-xs text-[#64748B] mt-0.5">
                 {subtitle}
               </p>
             )}
@@ -43,10 +43,10 @@ export const Card: React.FC<CardProps> = ({
         </div>
       )}
 
-      <div className={noPadding ? "" : "p-6"}>{children}</div>
+      <div className={noPadding ? "" : "p-5"}>{children}</div>
 
       {footer && (
-        <div className="px-6 py-4 bg-slate-50/70 border-t border-slate-100 rounded-b-2xl flex items-center justify-between">
+        <div className="px-5 py-3 bg-[#F8FAFC] border-t border-[#F1F5F9] rounded-b-xl flex items-center justify-between text-xs text-[#64748B]">
           {footer}
         </div>
       )}
