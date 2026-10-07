@@ -5,6 +5,7 @@ import {
   Calendar,
   Plus,
   Search,
+  Upload,
   ArrowRight,
   AlertTriangle,
 } from "lucide-react";
@@ -15,6 +16,7 @@ interface Conference {
   title?: string;
   name?: string;
   slug?: string;
+  delegates?: number;
   createdAt?: string;
 }
 
@@ -28,9 +30,9 @@ const Conferences: React.FC = () => {
   // Search
   const [searchQuery, setSearchQuery] = useState("");
 
-  // Create Modal
+  // Create Event Form Modal
   const [isCreateOpen, setIsCreateOpen] = useState(false);
-  const [title, setTitle] = useState("");
+  const [eventName, setEventName] = useState("");
 
   const loadConferences = async () => {
     setError(null);
@@ -44,7 +46,7 @@ const Conferences: React.FC = () => {
       setConferences(Array.isArray(data) ? data : []);
     } catch (err: any) {
       console.error("Failed to load events", err);
-      setError(err.message || "Failed to load events from backend");
+      setError(err.message || "Failed to load events from server.");
     } finally {
       setFetching(false);
     }
@@ -56,12 +58,12 @@ const Conferences: React.FC = () => {
 
   const handleCreate = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    if (!title.trim()) return;
+    if (!eventName.trim()) return;
     setLoading(true);
     setError(null);
 
     const slug =
-      title.toLowerCase().replace(/\s+/g, "-") +
+      eventName.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/(^-|-$)/g, "") +
       "-" +
       Date.now().toString().slice(-4);
 
@@ -69,21 +71,22 @@ const Conferences: React.FC = () => {
       const res = await fetch(`${API_URL}/api/conferences`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ title, name: title, slug }),
+        body: JSON.stringify({ title: eventName, name: eventName, slug }),
       });
+
       if (res.ok) {
-        setTitle("");
+        setEventName("");
         setIsCreateOpen(false);
         await loadConferences();
       } else {
         const errData = await res.json().catch(() => ({}));
         throw new Error(
-          errData.message || `Server error ${res.status} when creating event`
+          errData.message || `Server error ${res.status} creating event`
         );
       }
     } catch (err: any) {
       console.error("Create event failed", err);
-      setError(err.message || "Failed to create event");
+      setError(err.message || "Failed to create event.");
     } finally {
       setLoading(false);
     }
@@ -100,11 +103,11 @@ const Conferences: React.FC = () => {
   }, [conferences, searchQuery]);
 
   return (
-    <div className="space-y-6 max-w-7xl mx-auto">
+    <div className="space-y-6 max-w-6xl mx-auto">
       {/* ============================================================== */}
       {/* HEADER SECTION */}
       {/* ============================================================== */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-[#E2E8F0] pb-5">
         <div>
           <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">
             Events
@@ -118,7 +121,7 @@ const Conferences: React.FC = () => {
           onClick={() => setIsCreateOpen(true)}
           variant="primary"
           size="sm"
-          leftIcon={<Plus className="w-4 h-4" />}
+          leftIcon={<Plus className="w-3.5 h-3.5" />}
         >
           + Create Event
         </Button>
@@ -140,15 +143,13 @@ const Conferences: React.FC = () => {
         </div>
       )}
 
-      {/* ============================================================== */}
       {/* SEARCH BAR */}
-      {/* ============================================================== */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div className="relative w-full sm:w-80">
           <Search className="w-4 h-4 text-slate-400 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none" />
           <input
             type="text"
-            placeholder="Search events..."
+            placeholder="Search events by name or ID..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
             className="w-full h-9 pl-9 pr-3 text-xs bg-white text-[#0F172A] placeholder:text-slate-400 border border-[#CBD5E1] rounded-lg outline-none focus:border-[#0F172A] shadow-2xs"
@@ -161,20 +162,11 @@ const Conferences: React.FC = () => {
       </div>
 
       {/* ============================================================== */}
-      {/* EVENTS TABLE / CARDS */}
+      {/* EVENTS TABLE (CLEAN, PROFESSIONAL LIST) */}
       {/* ============================================================== */}
       {fetching ? (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {[1, 2, 3].map((n) => (
-            <div
-              key={n}
-              className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-2xs animate-pulse space-y-3"
-            >
-              <div className="h-5 bg-slate-100 rounded w-2/3" />
-              <div className="h-3 bg-slate-100 rounded w-1/3" />
-              <div className="h-9 bg-slate-100 rounded mt-4" />
-            </div>
-          ))}
+        <div className="bg-white rounded-xl border border-[#E2E8F0] p-8 text-center text-xs text-[#64748B]">
+          Loading events...
         </div>
       ) : filteredConferences.length === 0 ? (
         <EmptyState
@@ -184,52 +176,89 @@ const Conferences: React.FC = () => {
               ? `No events found matching "${searchQuery}".`
               : "Click '+ Create Event' above to set up your first event."
           }
-          actionLabel={searchQuery ? "Clear Search" : "Create Event"}
+          actionLabel={searchQuery ? "Clear Search" : "+ Create Event"}
           onAction={() => (searchQuery ? setSearchQuery("") : setIsCreateOpen(true))}
         />
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {filteredConferences.map((conf) => {
-            const confSlugOrId = conf.slug || conf._id;
-            return (
-              <div
-                key={conf._id}
-                className="bg-white rounded-xl border border-[#E2E8F0] p-5 shadow-2xs hover:border-slate-300 transition-colors flex flex-col justify-between"
-              >
-                <div>
-                  <div className="flex items-start justify-between gap-2 mb-2">
-                    <h3 className="text-base font-semibold text-[#0F172A] line-clamp-1">
+        <div className="bg-white rounded-xl border border-[#E2E8F0] shadow-2xs overflow-hidden">
+          <table className="w-full text-xs text-left">
+            <thead>
+              <tr className="bg-[#F8FAFC] border-b border-[#E2E8F0] text-[11px] font-semibold text-[#64748B] uppercase tracking-wider">
+                <th className="py-3 px-4">Event Name</th>
+                <th className="py-3 px-4">Identifier / Slug</th>
+                <th className="py-3 px-4">Registrations</th>
+                <th className="py-3 px-4">Created Date</th>
+                <th className="py-3 px-4">Status</th>
+                <th className="py-3 px-4 text-right">Actions</th>
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-[#F1F5F9]">
+              {filteredConferences.map((conf) => {
+                const confSlugOrId = conf.slug || conf._id;
+                return (
+                  <tr key={conf._id} className="hover:bg-slate-50/70 transition-colors">
+                    {/* Event Name */}
+                    <td className="py-3.5 px-4 font-semibold text-[#0F172A] text-sm">
                       {conf.title || conf.name}
-                    </h3>
-                    <Badge variant="success" size="sm">
-                      Active
-                    </Badge>
-                  </div>
+                    </td>
 
-                  <p className="text-xs font-mono text-[#64748B] truncate">
-                    ID: {conf.slug || conf._id}
-                  </p>
-                </div>
+                    {/* Slug */}
+                    <td className="py-3.5 px-4 font-mono text-[11px] text-[#64748B]">
+                      {conf.slug || conf._id}
+                    </td>
 
-                <div className="mt-5 pt-3 border-t border-[#F1F5F9] flex items-center justify-between gap-2">
-                  <button
-                    onClick={() => navigate(`/admin/conference/${confSlugOrId}`)}
-                    className="flex-1 h-9 bg-[#0F172A] hover:bg-[#1E293B] text-white text-xs font-semibold rounded-lg flex items-center justify-center gap-1.5 transition-colors"
-                  >
-                    <span>Manage Event</span>
-                    <ArrowRight className="w-3.5 h-3.5" />
-                  </button>
+                    {/* Registrations count */}
+                    <td className="py-3.5 px-4 font-semibold text-[#0F172A]">
+                      {(conf.delegates || 0).toLocaleString()}
+                    </td>
 
-                  <button
-                    onClick={() => navigate(`/admin/dashboard?conferenceId=${confSlugOrId}`)}
-                    className="h-9 px-3 bg-white hover:bg-slate-50 border border-[#E2E8F0] text-slate-700 text-xs font-medium rounded-lg transition-colors"
-                  >
-                    Dashboard
-                  </button>
-                </div>
-              </div>
-            );
-          })}
+                    {/* Date */}
+                    <td className="py-3.5 px-4 text-[#64748B]">
+                      {conf.createdAt
+                        ? new Date(conf.createdAt).toLocaleDateString("en-US", {
+                            year: "numeric",
+                            month: "short",
+                            day: "numeric",
+                          })
+                        : "—"}
+                    </td>
+
+                    {/* Status */}
+                    <td className="py-3.5 px-4">
+                      <Badge variant="success" size="sm">
+                        Active
+                      </Badge>
+                    </td>
+
+                    {/* Actions */}
+                    <td className="py-3.5 px-4 text-right">
+                      <div className="inline-flex items-center gap-2">
+                        <button
+                          onClick={() =>
+                            navigate(`/admin/upload?conferenceId=${confSlugOrId}`)
+                          }
+                          className="px-2.5 py-1 text-xs font-medium text-slate-700 bg-white hover:bg-slate-50 border border-[#CBD5E1] rounded-md transition-colors"
+                          title="Import attendee data for this event"
+                        >
+                          Import Data
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            localStorage.setItem("lastConferenceId", confSlugOrId);
+                            navigate(`/admin/dashboard?conferenceId=${confSlugOrId}`);
+                          }}
+                          className="px-2.5 py-1 text-xs font-semibold text-white bg-[#0F172A] hover:bg-[#1E293B] rounded-md transition-colors"
+                        >
+                          View Dashboard
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
 
@@ -239,8 +268,8 @@ const Conferences: React.FC = () => {
       <Modal
         isOpen={isCreateOpen}
         onClose={() => setIsCreateOpen(false)}
-        title="Create New Event"
-        description="Add a new event or conference to manage."
+        title="Create Event"
+        description="Set up a new conference or event to manage registrations."
         footer={
           <>
             <Button
@@ -256,7 +285,7 @@ const Conferences: React.FC = () => {
               size="sm"
               onClick={handleCreate}
               isLoading={loading}
-              disabled={!title.trim()}
+              disabled={!eventName.trim()}
             >
               Create Event
             </Button>
@@ -267,9 +296,10 @@ const Conferences: React.FC = () => {
           <Input
             label="Event Name *"
             placeholder="e.g. Annual Medical Congress 2026"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
+            value={eventName}
+            onChange={(e) => setEventName(e.target.value)}
             autoFocus
+            helperText="Enter the official title of the conference or event."
           />
         </form>
       </Modal>

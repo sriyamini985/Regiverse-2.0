@@ -3,18 +3,13 @@ import { Outlet, Link, useLocation, useNavigate } from "react-router-dom";
 import {
   LayoutDashboard,
   Calendar,
-  Users,
-  UserPlus,
   Upload,
-  Mail,
-  MessageSquare,
-  QrCode,
+  User,
   LogOut,
   Menu,
   X,
   ChevronLeft,
   ChevronRight,
-  ChevronDown,
 } from "lucide-react";
 import { useAuth } from "../../contexts/AuthContext";
 import { useConference } from "../../contexts/ConferenceContext";
@@ -78,13 +73,9 @@ export default function AdminLayout() {
     const p = location.pathname;
     if (p.includes("/dashboard")) return "Dashboard";
     if (p.includes("/conferences")) return "Events";
+    if (p.includes("/upload")) return "Import Data";
     if (p.includes("/registered-list")) return "Participants";
-    if (p.includes("/add-delegate")) return "Add Participant";
-    if (p.includes("/upload")) return "Import Database";
-    if (p.includes("/bulk-email")) return "Email Broadcast";
-    if (p.includes("/bulk-whatsapp")) return "WhatsApp Broadcast";
-    if (p.includes("/qr-generator")) return "Badges & QR";
-    if (p.includes("/conference/")) return "Manage Event";
+    if (p.includes("/conference/")) return "Event Overview";
     return "Dashboard";
   };
 
@@ -95,121 +86,49 @@ export default function AdminLayout() {
     if (setCurrentConferenceId) setCurrentConferenceId(newEventId);
 
     const p = location.pathname;
-    if (p.includes("/registered-list")) {
-      navigate(`/admin/conference/${newEventId}/registered-list`);
-    } else if (p.includes("/add-delegate")) {
-      navigate(`/admin/conference/${newEventId}/add-delegate`);
+    if (p.includes("/dashboard")) {
+      navigate(`/admin/dashboard?conferenceId=${newEventId}`);
     } else if (p.includes("/upload")) {
-      navigate(`/admin/conference/${newEventId}/upload`);
-    } else if (p.includes("/bulk-email")) {
-      navigate(`/admin/conference/${newEventId}/bulk-email`);
-    } else if (p.includes("/bulk-whatsapp")) {
-      navigate(`/admin/conference/${newEventId}/bulk-whatsapp`);
+      navigate(`/admin/upload?conferenceId=${newEventId}`);
     } else if (p.includes("/conference/")) {
-      navigate(`/admin/conference/${newEventId}`);
-    } else if (p.includes("/dashboard")) {
       navigate(`/admin/dashboard?conferenceId=${newEventId}`);
     }
   };
 
-  const navSections = [
+  const navItems = [
     {
-      label: "MAIN",
-      items: [
-        {
-          title: "Dashboard",
-          href: activeEventId
-            ? `/admin/dashboard?conferenceId=${activeEventId}`
-            : "/admin/dashboard",
-          icon: LayoutDashboard,
-          active: location.pathname.includes("/dashboard"),
-        },
-        {
-          title: "Events",
-          href: "/admin/conferences",
-          icon: Calendar,
-          active: location.pathname.includes("/conferences"),
-        },
-      ],
+      title: "Dashboard",
+      href: activeEventId ? `/admin/dashboard?conferenceId=${activeEventId}` : "/admin/dashboard",
+      icon: LayoutDashboard,
+      active: location.pathname.includes("/dashboard") || location.pathname === "/admin",
     },
-    ...(activeEventId
-      ? [
-          {
-            label: "EVENT MANAGEMENT",
-            items: [
-              {
-                title: "Manage Event",
-                href: `/admin/conference/${activeEventId}`,
-                icon: Calendar,
-                active:
-                  location.pathname === `/admin/conference/${activeEventId}` ||
-                  location.pathname === `/conference/${activeEventId}`,
-              },
-              {
-                title: "Participants",
-                href: `/admin/conference/${activeEventId}/registered-list`,
-                icon: Users,
-                active: location.pathname.includes("/registered-list"),
-              },
-              {
-                title: "Add Participant",
-                href: `/admin/conference/${activeEventId}/add-delegate`,
-                icon: UserPlus,
-                active: location.pathname.includes("/add-delegate"),
-              },
-              {
-                title: "Import Data",
-                href: `/admin/conference/${activeEventId}/upload`,
-                icon: Upload,
-                active: location.pathname.includes("/upload"),
-              },
-            ],
-          },
-          {
-            label: "COMMUNICATION",
-            items: [
-              {
-                title: "Email",
-                href: `/admin/conference/${activeEventId}/bulk-email`,
-                icon: Mail,
-                active: location.pathname.includes("/bulk-email"),
-              },
-              {
-                title: "WhatsApp",
-                href: `/admin/conference/${activeEventId}/bulk-whatsapp`,
-                icon: MessageSquare,
-                active: location.pathname.includes("/bulk-whatsapp"),
-              },
-            ],
-          },
-        ]
-      : []),
     {
-      label: "DOCUMENTS & TOOLS",
-      items: [
-        {
-          title: "Badges & QR",
-          href: "/admin/qr-generator",
-          icon: QrCode,
-          active: location.pathname.includes("/qr-generator"),
-        },
-      ],
+      title: "Events",
+      href: "/admin/conferences",
+      icon: Calendar,
+      active: location.pathname.includes("/conferences"),
+    },
+    {
+      title: "Import Data",
+      href: activeEventId ? `/admin/upload?conferenceId=${activeEventId}` : "/admin/upload",
+      icon: Upload,
+      active: location.pathname.includes("/upload"),
     },
   ];
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans flex flex-col lg:flex-row antialiased">
       {/* ============================================================== */}
-      {/* DESKTOP SIDEBAR */}
+      {/* DESKTOP SIDEBAR: ONLY 3 CORE ADMIN RESPONSIBILITIES */}
       {/* ============================================================== */}
       <aside
         className={`hidden lg:flex flex-col bg-white border-r border-[#E2E8F0] sticky top-0 h-screen transition-all duration-200 z-40 select-none ${
-          collapsed ? "w-16" : "w-60"
+          collapsed ? "w-16" : "w-56"
         }`}
       >
         {/* Brand */}
         <div className="h-14 px-4 border-b border-[#F1F5F9] flex items-center justify-between shrink-0">
-          <Link to="/admin/conferences" className="flex items-center gap-2.5 overflow-hidden">
+          <Link to="/admin/dashboard" className="flex items-center gap-2.5 overflow-hidden">
             <div className="w-8 h-8 rounded-lg bg-[#0F172A] flex items-center justify-center text-white font-bold text-sm shrink-0">
               R
             </div>
@@ -233,39 +152,43 @@ export default function AdminLayout() {
           </button>
         </div>
 
-        {/* Navigation Items */}
-        <div className="flex-1 overflow-y-auto py-4 px-2 space-y-5">
-          {navSections.map((section, idx) => (
-            <div key={idx} className="space-y-0.5">
-              {!collapsed && (
-                <div className="px-3 pb-1 text-[10px] font-semibold text-[#64748B] uppercase tracking-wider">
-                  {section.label}
-                </div>
-              )}
-              {section.items.map((item) => {
-                const Icon = item.icon;
-                return (
-                  <Link
-                    key={item.href}
-                    to={item.href}
-                    title={collapsed ? item.title : undefined}
-                    className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
-                      item.active
-                        ? "bg-slate-100 text-[#0F172A] font-semibold"
-                        : "text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50"
-                    } ${collapsed ? "justify-center" : ""}`}
-                  >
-                    <Icon className="w-4 h-4 shrink-0 text-slate-500" />
-                    {!collapsed && <span className="truncate">{item.title}</span>}
-                  </Link>
-                );
-              })}
-            </div>
-          ))}
+        {/* MAIN NAVIGATION: ONLY DASHBOARD, EVENTS, IMPORT DATA */}
+        <div className="flex-1 py-4 px-2 space-y-4">
+          <div className="space-y-0.5">
+            {!collapsed && (
+              <div className="px-3 pb-1 text-[10px] font-semibold text-[#64748B] uppercase tracking-wider">
+                MAIN
+              </div>
+            )}
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.title}
+                  to={item.href}
+                  title={collapsed ? item.title : undefined}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium transition-colors ${
+                    item.active
+                      ? "bg-slate-100 text-[#0F172A] font-semibold"
+                      : "text-[#64748B] hover:text-[#0F172A] hover:bg-slate-50"
+                  } ${collapsed ? "justify-center" : ""}`}
+                >
+                  <Icon className="w-4 h-4 shrink-0 text-slate-500" />
+                  {!collapsed && <span className="truncate">{item.title}</span>}
+                </Link>
+              );
+            })}
+          </div>
         </div>
 
-        {/* User Profile / Logout */}
-        <div className="p-3 border-t border-[#F1F5F9] bg-white shrink-0">
+        {/* SYSTEM SECTION */}
+        <div className="p-3 border-t border-[#F1F5F9] bg-white shrink-0 space-y-1">
+          {!collapsed && (
+            <div className="px-2 pb-1 text-[10px] font-semibold text-[#64748B] uppercase tracking-wider">
+              SYSTEM
+            </div>
+          )}
+
           <div
             className={`flex items-center gap-2.5 p-2 rounded-lg ${
               collapsed ? "justify-center" : ""
@@ -313,31 +236,27 @@ export default function AdminLayout() {
         </div>
 
         {mobileMenuOpen && (
-          <div className="border-t border-[#E2E8F0] bg-white p-3 space-y-3 max-h-[80vh] overflow-y-auto">
-            {navSections.map((section, idx) => (
-              <div key={idx} className="space-y-0.5">
-                <div className="text-[10px] font-semibold text-[#64748B] uppercase px-2">
-                  {section.label}
-                </div>
-                {section.items.map((item) => {
-                  const Icon = item.icon;
-                  return (
-                    <Link
-                      key={item.href}
-                      to={item.href}
-                      className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium ${
-                        item.active
-                          ? "bg-slate-100 text-[#0F172A] font-semibold"
-                          : "text-[#64748B] hover:bg-slate-50"
-                      }`}
-                    >
-                      <Icon className="w-4 h-4 text-slate-500" />
-                      <span>{item.title}</span>
-                    </Link>
-                  );
-                })}
-              </div>
-            ))}
+          <div className="border-t border-[#E2E8F0] bg-white p-3 space-y-2">
+            <div className="text-[10px] font-semibold text-[#64748B] uppercase px-2">
+              MAIN
+            </div>
+            {navItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <Link
+                  key={item.title}
+                  to={item.href}
+                  className={`flex items-center gap-2.5 px-3 py-2 rounded-lg text-xs font-medium ${
+                    item.active
+                      ? "bg-slate-100 text-[#0F172A] font-semibold"
+                      : "text-[#64748B] hover:bg-slate-50"
+                  }`}
+                >
+                  <Icon className="w-4 h-4 text-slate-500" />
+                  <span>{item.title}</span>
+                </Link>
+              );
+            })}
             <div className="pt-2 border-t border-slate-100">
               <button
                 onClick={handleLogout}
@@ -357,7 +276,7 @@ export default function AdminLayout() {
       <div className="flex-1 flex flex-col min-w-0">
         {/* Simple Top Bar */}
         <header className="hidden lg:flex h-14 bg-white border-b border-[#E2E8F0] px-6 items-center justify-between sticky top-0 z-30">
-          {/* Left: Page Title + Simple Event Selector */}
+          {/* Left: Page Title + Clean Event Selector */}
           <div className="flex items-center gap-4">
             <h1 className="text-base font-bold text-[#0F172A] tracking-tight">
               {getPageTitle()}

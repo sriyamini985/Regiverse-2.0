@@ -14,11 +14,13 @@ export default function AdminRoutes() {
   return (
     <Routes>
       <Route element={<AdminLayout />}>
-        <Route index element={<Navigate to="conferences" replace />} />
+        <Route index element={<Navigate to="dashboard" replace />} />
         
         <Route path="dashboard" element={<Dashboard />} />
         <Route path="conferences" element={<Conferences />} />
+        <Route path="upload" element={<Upload />} />
 
+        {/* Existing event routes preserved for backward compatibility and links */}
         <Route path="conference/:conferenceId">
           <Route index element={<ConferenceDashboard />} />
           <Route path="upload" element={<Upload />} />
