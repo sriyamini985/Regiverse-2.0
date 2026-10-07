@@ -40,20 +40,22 @@ const Dashboard = () => {
   },
 };
 
+  const activeDayData = (allDaysData as any)[selectedDay] || allDaysData["Day 1"];
+
   return (
     <div className="w-full space-y-6">
       {/* HEADER */}
       <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
         <div></div>
 
-        <div className="bg-white px-4 py-2 rounded-lg border flex items-center gap-2 w-fit">
-          <span className="text-sm">Event Status</span>
-          <span className="text-green-600 font-semibold">● LIVE</span>
+        <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-2xs flex items-center gap-2 w-fit">
+          <span className="text-sm text-slate-600 font-medium">Event Status</span>
+          <span className="text-emerald-600 font-semibold text-sm">● LIVE</span>
         </div>
       </div>
 
       {/* STATS */}
-      <TopStats />
+      <TopStats data={activeDayData} totalDelegates={118} />
 
       {/* DAY TABS */}
       <DayTabs
@@ -61,16 +63,16 @@ const Dashboard = () => {
         setSelectedDay={setSelectedDay}
       />
 
-      {/* HIGHLIGHT CARDS */}
+      {/* HIGHLIGHT CARDS (MEAL ATTENDANCE) */}
       <HighlightCards
-        meals={allDaysData[selectedDay].meals}
+        meals={activeDayData.meals}
         total={118}
         selectedDay={selectedDay}
       />
 
-      {/* CHARTS */}
+      {/* CHARTS (DISTRIBUTION BREAKDOWN WITHOUT DUPLICATE MEALS) */}
       <ChartsSection
-        data={allDaysData[selectedDay] || allDaysData["Day 1"]}
+        data={activeDayData}
       />
     </div>
   );
