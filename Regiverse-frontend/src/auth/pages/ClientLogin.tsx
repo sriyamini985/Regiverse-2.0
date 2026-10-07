@@ -141,7 +141,7 @@ export default function ClientLogin() {
             <span className="text-white font-extrabold text-3xl">C</span>
           </div>
           <h2 className="text-3xl font-black bg-gradient-to-r from-white via-cyan-100 to-teal-200 bg-clip-text text-transparent tracking-tight">
-            RegXpert
+            REGIVERSE
           </h2>
           <p className="text-slate-400 text-sm mt-1">Client Management Dashboard</p>
         </div>

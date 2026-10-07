@@ -141,7 +141,7 @@ export default function AdminLogin() {
             <span className="text-white font-extrabold text-3xl">A</span>
           </div>
           <h2 className="text-3xl font-black bg-gradient-to-r from-white via-indigo-100 to-purple-200 bg-clip-text text-transparent tracking-tight">
-            RegXpert
+            REGIVERSE
           </h2>
           <p className="text-slate-400 text-sm mt-1">Administrator Control Center</p>
         </div>

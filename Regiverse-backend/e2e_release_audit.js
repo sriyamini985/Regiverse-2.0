@@ -37,7 +37,7 @@ const Participant = mongoose.model("Participant", ParticipantSchema);
 
 async function run() {
   console.log("=========================================================");
-  console.log("   REGXPERT PRE-DEPLOYMENT TESTING & RELEASE AUDIT       ");
+  console.log("   REGIVERSE PRE-DEPLOYMENT TESTING & RELEASE AUDIT       ");
   console.log("=========================================================");
 
   console.log("\nConnecting to MongoDB database...");
