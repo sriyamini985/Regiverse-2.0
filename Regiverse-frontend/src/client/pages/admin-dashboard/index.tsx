@@ -1,74 +1,177 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { useClientEvent } from "../../contexts/ClientEventContext";
 import TopStats from "./components/TopStats";
 import DayTabs from "./components/DayTabs";
 import HighlightCards from "./components/HighlightCards";
+import { Calendar, RefreshCw, AlertCircle, ShieldCheck } from "lucide-react";
+
+interface DashboardStatsData {
+  totalDelegates: number;
+  badgesIssued: number;
+  certificatesIssued: number;
+  kitbagsDelivered: number;
+  checkedIn: number;
+  meals: Record<string, { breakfast: number; lunch: number; dinner: number }>;
+}
 
 const Dashboard = () => {
+  const { selectedEvent, selectedEventId, loadingEvents, getAuthHeaders } = useClientEvent();
   const [selectedDay, setSelectedDay] = useState("Day 1");
 
-  const allDaysData = {
-    "Day 1": {
-      badges: { printed: 52, issued: 45 },
-      meals: { breakfast: 30, lunch: 50, dinner: 80 },
-      kitbags: { given: 80, pending: 38 },
-      certificates: { issued: 10, pending: 108 }
-    },
-    "Day 2": {
-      badges: { printed: 40, issued: 30 },
-      meals: { breakfast: 20, lunch: 40, dinner: 60 },
-      kitbags: { given: 60, pending: 20 },
-      certificates: { issued: 15, pending: 90 }
-    },
-    "Day 3": {
-      badges: { printed: 60, issued: 50 },
-      meals: { breakfast: 35, lunch: 55, dinner: 75 },
-      kitbags: { given: 90, pending: 28 },
-      certificates: { issued: 30, pending: 88 }
-    },
-    "Day 4": {
-      badges: { printed: 48, issued: 40 },
-      meals: { breakfast: 25, lunch: 45, dinner: 70 },
-      kitbags: { given: 70, pending: 48 },
-      certificates: { issued: 20, pending: 98 }
-    },
-    "Day 5": {
-      badges: { printed: 76, issued: 39 },
-      meals: { breakfast: 98, lunch: 87, dinner: 65 },
-      kitbags: { given: 12, pending: 34 },
-      certificates: { issued: 20, pending: 78 }
-    },
-  };
+  const [stats, setStats] = useState<DashboardStatsData | null>(null);
+  const [loadingStats, setLoadingStats] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const activeDayData = (allDaysData as any)[selectedDay] || allDaysData["Day 1"];
+  // Fetch event-scoped dashboard stats whenever the selected event changes
+  useEffect(() => {
+    if (!selectedEventId) {
+      setStats(null);
+      setLoadingStats(false);
+      return;
+    }
+
+    let isMounted = true;
+
+    const fetchStats = async () => {
+      try {
+        setLoadingStats(true);
+        setError(null);
+
+        const res = await fetch(
+          `${import.meta.env.VITE_API_URL}/api/dashboard/stats/${selectedEventId}`,
+          {
+            headers: getAuthHeaders(),
+          }
+        );
+
+        if (!res.ok) {
+          const errData = await res.json().catch(() => ({}));
+          throw new Error(errData.message || `HTTP ${res.status}: Failed to load event data`);
+        }
+
+        const data = await res.json();
+        if (isMounted) {
+          setStats(data.stats);
+        }
+      } catch (err: any) {
+        if (isMounted) {
+          console.error("Dashboard stats fetch error:", err);
+          setError(err.message || "Failed to load dashboard metrics for this event.");
+        }
+      } finally {
+        if (isMounted) {
+          setLoadingStats(false);
+        }
+      }
+    };
+
+    fetchStats();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [selectedEventId, getAuthHeaders]);
+
+  if (loadingEvents || (loadingStats && !stats)) {
+    return (
+      <div className="w-full space-y-6 animate-pulse">
+        <div className="h-14 bg-slate-200 rounded-xl w-full max-w-md" />
+        <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-5">
+          {[1, 2, 3, 4].map((i) => (
+            <div key={i} className="h-28 bg-slate-200 rounded-2xl" />
+          ))}
+        </div>
+        <div className="h-10 bg-slate-200 rounded-lg w-72" />
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-5">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="h-44 bg-slate-200 rounded-2xl" />
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="bg-rose-50 border border-rose-200 rounded-2xl p-6 text-rose-800 text-xs font-medium space-y-2">
+        <div className="flex items-center gap-2 text-rose-700 font-bold text-sm">
+          <AlertCircle className="w-4 h-4" />
+          <span>Access Restricted</span>
+        </div>
+        <p>{error}</p>
+      </div>
+    );
+  }
+
+  const eventName = selectedEvent?.name || selectedEvent?.title || "Selected Event";
+  const totalDelegates = stats?.totalDelegates ?? 0;
+
+  // Active day meals from real data
+  const dayMeals = stats?.meals?.[selectedDay] || { breakfast: 0, lunch: 0, dinner: 0 };
+
+  const activeDayOperationalData = {
+    badges: { printed: stats?.badgesIssued ?? 0, issued: stats?.badgesIssued ?? 0 },
+    kitbags: { given: stats?.kitbagsDelivered ?? 0, pending: Math.max(0, totalDelegates - (stats?.kitbagsDelivered ?? 0)) },
+    certificates: { issued: stats?.certificatesIssued ?? 0, pending: Math.max(0, totalDelegates - (stats?.certificatesIssued ?? 0)) },
+  };
 
   return (
     <div className="w-full space-y-6">
-      {/* HEADER */}
-      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+      {/* ============================================================
+          HEADER: REGIVERSE CONFERENCE MANAGEMENT & SELECTED EVENT
+      ============================================================ */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-4 pb-1">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Conference Operations Overview</h2>
-          <p className="text-xs text-slate-500 mt-0.5">Live monitoring for event logistics, materials, and daily attendance.</p>
+          <div className="flex items-center gap-2">
+            <span className="text-xs font-bold text-teal-700 uppercase tracking-wider flex items-center gap-1">
+              <ShieldCheck className="w-3.5 h-3.5 text-teal-600" />
+              Event Operations
+            </span>
+            <span className="text-slate-300">•</span>
+            <span className="text-xs font-semibold text-slate-500">Live Scoped Metrics</span>
+          </div>
+
+          <h1 className="text-2xl font-black text-slate-900 tracking-tight mt-0.5 flex items-center gap-2">
+            <span>{eventName}</span>
+          </h1>
+          <p className="text-xs text-slate-500 mt-0.5">
+            Real-time logistical monitoring, materials distribution, and session attendance.
+          </p>
         </div>
 
-        <div className="bg-white px-4 py-2 rounded-lg border border-slate-200 shadow-2xs flex items-center gap-2 w-fit">
-          <span className="text-sm text-slate-600 font-medium">Event Status</span>
-          <span className="text-emerald-600 font-semibold text-sm">● LIVE</span>
+        {/* EVENT STATUS PILL */}
+        <div className="flex items-center gap-2 self-start sm:self-auto">
+          <div className="bg-white px-3.5 py-1.5 rounded-lg border border-slate-200 shadow-2xs flex items-center gap-2">
+            <span className="text-xs text-slate-600 font-medium">Event Status</span>
+            <span className="text-emerald-600 font-bold text-xs flex items-center gap-1">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              LIVE
+            </span>
+          </div>
         </div>
       </div>
 
-      {/* 4 PRIMARY METRIC CARDS (Delegates, Badges, Certificates, Kit Bags) */}
-      <TopStats data={activeDayData} totalDelegates={118} />
+      {/* ============================================================
+          4 PRIMARY METRIC CARDS (Delegates, Badges, Certificates, Kit Bags)
+      ============================================================ */}
+      <TopStats data={activeDayOperationalData} totalDelegates={totalDelegates} />
 
-      {/* DAY SELECTOR TABS */}
-      <DayTabs
-        selectedDay={selectedDay}
-        setSelectedDay={setSelectedDay}
-      />
+      {/* ============================================================
+          DAY SELECTOR TABS
+      ============================================================ */}
+      <div className="pt-2">
+        <DayTabs
+          selectedDay={selectedDay}
+          setSelectedDay={setSelectedDay}
+        />
+      </div>
 
-      {/* MEAL ATTENDANCE HIGHLIGHTS (Breakfast, Lunch, Dinner) */}
+      {/* ============================================================
+          MEAL ATTENDANCE HIGHLIGHTS (Breakfast, Lunch, Dinner)
+      ============================================================ */}
       <HighlightCards
-        meals={activeDayData.meals}
-        total={118}
+        meals={dayMeals}
+        total={totalDelegates}
         selectedDay={selectedDay}
       />
     </div>

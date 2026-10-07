@@ -1,16 +1,81 @@
 import Participant from "../models/Participant.js";
 import { getIO } from "../socket.js";
 import xlsx from "xlsx";
-
-
-// src/controllers/dashboardController.js
+import { verifyConferenceAccess } from "../utils/authHelper.js";
 
 export const getDashboardStats = async (req, res) => {
   try {
-    // Your database logic here (e.g., counting participants, active conferences)
-    res.json({ success: true, msg: "Stats fetched" });
+    const conferenceId = req.params.conferenceId || req.query.conferenceId;
+    if (!conferenceId) {
+      return res.status(400).json({ success: false, message: "Conference ID is required." });
+    }
+
+    const authResult = await verifyConferenceAccess(conferenceId, req);
+    if (!authResult.authorized) {
+      return res.status(authResult.status).json({ success: false, message: authResult.message });
+    }
+
+    const targetConference = authResult.conference;
+    const confIdStr = targetConference._id.toString();
+    const confName = targetConference.name || targetConference.title || "";
+    const confSlug = targetConference.slug || "";
+
+    // Query participants strictly isolated to this conference
+    const participants = await Participant.find({
+      $or: [
+        { conferenceId: confIdStr },
+        { conferenceId: confSlug },
+        { conferenceName: confName }
+      ].filter(Boolean)
+    });
+
+    const totalDelegates = participants.length;
+    const badgesIssued = participants.filter(p => p.printed === true || p.isBadgePrinted === true).length;
+    const certificatesIssued = participants.filter(p => p.certificateGiven === true).length;
+    const kitbagsDelivered = participants.filter(p => p.kitbagCollected === true).length;
+    const checkedIn = participants.filter(p => p.isCheckedIn === true).length;
+
+    // Meals per day (Day 1 through Day 5)
+    const meals = {};
+    for (let d = 1; d <= 5; d++) {
+      const dKey = `Day ${d}`;
+      let bCount = 0;
+      let lCount = 0;
+      let dCount = 0;
+
+      participants.forEach(p => {
+        const logs = p.foodLogs instanceof Map ? Object.fromEntries(p.foodLogs) : (p.foodLogs || {});
+        if (logs[`day${d}-breakfast`] || logs[`day${d}Breakfast`]) bCount++;
+        if (logs[`day${d}-lunch`] || logs[`day${d}Lunch`]) lCount++;
+        if (logs[`day${d}-dinner`] || logs[`day${d}Dinner`]) dCount++;
+      });
+
+      meals[dKey] = {
+        breakfast: bCount,
+        lunch: lCount,
+        dinner: dCount
+      };
+    }
+
+    return res.json({
+      success: true,
+      conference: {
+        _id: targetConference._id,
+        name: targetConference.name,
+        slug: targetConference.slug,
+        isActive: targetConference.isActive
+      },
+      stats: {
+        totalDelegates,
+        badgesIssued,
+        certificatesIssued,
+        kitbagsDelivered,
+        checkedIn,
+        meals
+      }
+    });
   } catch (error) {
-    res.status(500).json({ error: error.message });
+    return res.status(500).json({ success: false, error: error.message });
   }
 };
 
@@ -18,18 +83,23 @@ export const importExcel = async (req, res) => {
   try {
     const { conferenceId } = req.body;
 
-    // 1. Check if Multer successfully caught the file
     if (!req.file) {
       return res.status(400).json({ success: false, msg: "No file was received by the server." });
     }
 
     if (!conferenceId) {
-      return res.status(400).json({ success: false, msg: "Missing workspace/conference ID." });
+      return res.status(400).json({ success: false, msg: "Missing conference ID." });
     }
 
-    const cleanConferenceId = String(conferenceId).trim();
+    const authResult = await verifyConferenceAccess(conferenceId, req);
+    if (!authResult.authorized) {
+      return res.status(authResult.status).json({ success: false, msg: authResult.message });
+    }
 
-    // 2. Read the Excel file directly from memory buffer
+    const targetConference = authResult.conference;
+    const cleanConferenceId = targetConference._id.toString();
+    const cleanConferenceName = targetConference.name || targetConference.title;
+
     const workbook = xlsx.read(req.file.buffer, { type: "buffer" });
     const firstSheetName = workbook.SheetNames[0];
     const rawRows = xlsx.utils.sheet_to_json(workbook.Sheets[firstSheetName]);
@@ -38,8 +108,6 @@ export const importExcel = async (req, res) => {
       return res.status(400).json({ success: false, msg: "The uploaded sheet is empty." });
     }
 
-    // 3. Map the rows to match your database schema.
-    // This allows "any data" by looking for multiple possible column headers (e.g., Name, name, NAME)
     const processedParticipants = rawRows.map((row) => ({
       name: row.Name || row.name || row.NAME || "Unknown Delegate",
       email: row.Email || row.email || row.EMAIL || "",
@@ -48,20 +116,18 @@ export const importExcel = async (req, res) => {
       regId: String(row.RegId || row.regId || row.id || ""),
       qrCode: String(row.QrCode || row.qrcode || row.RegId || row.regId || ""),
       
-      // Default Event States
       status: "pending",
       conferenceId: cleanConferenceId,
+      conferenceName: cleanConferenceName,
       isCheckedIn: false,
-      isBadgePrinted: false,
+      printed: false,
       kitbagCollected: false,
       certificateGiven: false,
       foodLogs: {}
     }));
 
-    // 4. Save to MongoDB
     const insertedRecords = await Participant.insertMany(processedParticipants);
 
-    // 5. Notify the frontend dashboard to update its charts instantly
     getIO().to(cleanConferenceId).emit("conferenceDataUpdated", { conferenceId: cleanConferenceId });
 
     return res.json({ 

@@ -16,6 +16,7 @@ import {
   broadcastParticipantUpdated,
   broadcastParticipantDeleted,
 } from "../socket.js";
+import { verifyConferenceAccess } from "../utils/authHelper.js";
 
 const router = express.Router();
 
@@ -44,13 +45,11 @@ router.post("/", async (req, res) => {
     const body = { ...req.body };
     let actualConferenceId = null;
     if (body.conferenceId) {
-      const targetConference = await Conference.findOne({
-        $or: [
-          { _id: mongoose.Types.ObjectId.isValid(body.conferenceId) ? body.conferenceId : null },
-          { slug: body.conferenceId },
-          { name: body.conferenceId }
-        ]
-      }).catch(() => null);
+      const authResult = await verifyConferenceAccess(body.conferenceId, req);
+      if (!authResult.authorized) {
+        return res.status(authResult.status).json({ success: false, message: authResult.message });
+      }
+      const targetConference = authResult.conference;
       if (targetConference) {
         body.conferenceName = targetConference.name;
         body.conferenceId = targetConference._id.toString();
@@ -199,33 +198,27 @@ router.delete("/:id", async (req, res) => {
 router.get("/conference/:conferenceId", async (req, res) => {
   try {
     const param = req.params.conferenceId?.trim();
-    
-    const queryConditions = [
-      { conferenceId: param },
-      { conferenceName: param }
-    ];
-
-    const targetConference = await Conference.findOne({
-      $or: [
-        { slug: param },
-        { name: param }
-      ]
-    }).catch(() => null);
-
-    if (targetConference) {
-      queryConditions.push({ conferenceId: targetConference._id.toString() });
-      queryConditions.push({ conferenceName: targetConference.name });
+    if (!param) {
+      return res.status(400).json({ error: "Conference ID required" });
     }
 
-    if (mongoose.Types.ObjectId.isValid(param)) {
-      const targetByObjId = await Conference.findById(param).catch(() => null);
-      if (targetByObjId) {
-        queryConditions.push({ conferenceId: targetByObjId._id.toString() });
-        queryConditions.push({ conferenceName: targetByObjId.name });
-        if (targetByObjId.slug) {
-          queryConditions.push({ conferenceId: targetByObjId.slug });
-        }
-      }
+    const authResult = await verifyConferenceAccess(param, req);
+    if (!authResult.authorized) {
+      return res.status(authResult.status).json({ success: false, message: authResult.message });
+    }
+
+    const targetConference = authResult.conference;
+    const confIdStr = targetConference ? targetConference._id.toString() : param;
+    const confName = targetConference ? (targetConference.name || targetConference.title) : param;
+    const confSlug = targetConference ? targetConference.slug : null;
+    
+    const queryConditions = [
+      { conferenceId: confIdStr },
+      { conferenceName: confName }
+    ];
+
+    if (confSlug) {
+      queryConditions.push({ conferenceId: confSlug });
     }
 
     const participants = await Participant.find({

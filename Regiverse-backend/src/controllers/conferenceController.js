@@ -3,6 +3,7 @@ import Conference from "../models/Conference.js";
 import { broadcastBulkImport } from "../socket.js";
 import xlsx from "xlsx";
 import mongoose from "mongoose";
+import { verifyConferenceAccess } from "../utils/authHelper.js";
 
 // Helper function to generate a random "ABCD123" format sequence
 const generateCustomRegId = () => {
@@ -33,15 +34,13 @@ export const importExcel = async (req, res) => {
 
     const cleanConferenceId = String(conferenceId).trim();
 
-    // Find target conference using slug, name, or ObjectId
-    const targetConference = await Conference.findOne({
-      $or: [
-        { _id: mongoose.Types.ObjectId.isValid(cleanConferenceId) ? cleanConferenceId : undefined },
-        { slug: cleanConferenceId },
-        { name: cleanConferenceId }
-      ].filter(Boolean)
-    });
+    // Verify authorized access to target conference
+    const authResult = await verifyConferenceAccess(cleanConferenceId, req);
+    if (!authResult.authorized) {
+      return res.status(authResult.status).json({ success: false, message: authResult.message });
+    }
 
+    const targetConference = authResult.conference;
     const finalConferenceId = targetConference ? String(targetConference._id) : cleanConferenceId;
     const finalConferenceName = targetConference ? (targetConference.name || targetConference.title) : "Unknown Conference";
 

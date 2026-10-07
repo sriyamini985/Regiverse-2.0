@@ -5,6 +5,14 @@ const conferenceSchema = new mongoose.Schema(
     name: { type: String, required: true },
     slug: { type: String, required: true, unique: true },
     isActive: { type: Boolean, default: false }, // Tracks workspace deployment status
+    authorizedClients: {
+      type: [String],
+      default: [], // List of client emails authorized for this event
+    },
+    clientEmail: {
+      type: String,
+      default: "",
+    },
   },
   { timestamps: true }
 );
