@@ -1,3 +1,7 @@
+import React from "react";
+import { Search, X } from "lucide-react";
+import { Button } from "../../../components/ui";
+
 interface Props {
   searchQuery: string;
   setSearchQuery: (value: string) => void;
@@ -5,40 +9,31 @@ interface Props {
   onClear: () => void;
 }
 
-const SearchBar = ({
+const SearchBar: React.FC<Props> = ({
   searchQuery,
   setSearchQuery,
   onSearch,
   onClear,
-}: Props) => {
+}) => {
   return (
-    <div className="bg-white p-4 sm:p-6 rounded-xl shadow space-y-4">
-      <p className="font-medium">Search delegate</p>
-
-      <div className="flex flex-col sm:flex-row gap-3">
-        <input
-          value={searchQuery}
-          onChange={(e) => setSearchQuery(e.target.value)}
-          className="flex-1 border rounded-lg px-4 py-2 w-full"
-          placeholder="Enter name, email, phone, ID..."
-        />
-
-        <div className="flex gap-2 w-full sm:w-auto">
-          <button
-            onClick={onSearch}
-            className="flex-1 sm:flex-none px-4 py-2 bg-blue-600 text-white rounded-lg"
-          >
-            Search
-          </button>
-
-          <button
-            onClick={onClear}
-            className="flex-1 sm:flex-none px-4 py-2 border rounded-lg"
-          >
-            Clear
-          </button>
-        </div>
-      </div>
+    <div className="relative flex-1">
+      <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+      <input
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && onSearch()}
+        className="w-full h-11 pl-10 pr-10 text-xs font-semibold bg-white text-slate-900 placeholder:text-slate-400 border border-slate-200 rounded-xl outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-600 transition-all shadow-2xs"
+        placeholder="Filter delegates by Name, Email, Phone, or Reg ID..."
+      />
+      {searchQuery && (
+        <button
+          onClick={onClear}
+          className="absolute right-3 top-1/2 -translate-y-1/2 p-1 text-slate-400 hover:text-slate-600 rounded-lg transition-colors"
+          title="Clear search"
+        >
+          <X className="w-3.5 h-3.5" />
+        </button>
+      )}
     </div>
   );
 };
