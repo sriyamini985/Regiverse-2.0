@@ -41,57 +41,37 @@ const Dashboard = () => {
 };
 
   return (
-    <div className="min-h-screen bg-[#EEF1F6] flex">
+    <div className="w-full space-y-6">
+      {/* HEADER */}
+      <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
+        <div></div>
 
-      {/* ✅ SIDEBAR (HIDDEN ON MOBILE) */}
-      <div className="hidden lg:block w-64 bg-white border-r p-6 space-y-6">
-        <div>
-         
-          
-        </div>
-
-        <div>
-          <div className="space-y-3">
-          </div>
+        <div className="bg-white px-4 py-2 rounded-lg border flex items-center gap-2 w-fit">
+          <span className="text-sm">Event Status</span>
+          <span className="text-green-600 font-semibold">● LIVE</span>
         </div>
       </div>
 
-      {/* ✅ MAIN CONTENT */}
-      <div className="flex-1 w-full p-4 sm:p-6 space-y-6">
+      {/* STATS */}
+      <TopStats />
 
-        {/* HEADER */}
-        <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3">
-          <div>
+      {/* DAY TABS */}
+      <DayTabs
+        selectedDay={selectedDay}
+        setSelectedDay={setSelectedDay}
+      />
 
-          </div>
+      {/* HIGHLIGHT CARDS */}
+      <HighlightCards
+        meals={allDaysData[selectedDay].meals}
+        total={118}
+        selectedDay={selectedDay}
+      />
 
-          <div className="bg-white px-4 py-2 rounded-lg border flex items-center gap-2 w-fit">
-            <span className="text-sm">Event Status</span>
-            <span className="text-green-600 font-semibold">● LIVE</span>
-          </div>
-        </div>
-
-        {/* STATS */}
-        <TopStats />
-
-        {/* DAY TABS */}
-        <DayTabs
-          selectedDay={selectedDay}
-          setSelectedDay={setSelectedDay}
-        />
-
-        {/* HIGHLIGHT CARDS */}
-        <HighlightCards
-          meals={allDaysData[selectedDay].meals}
-          total={118}
-          selectedDay={selectedDay}
-        />
-
-        {/* CHARTS */}
-        <ChartsSection
-          data={allDaysData[selectedDay] || allDaysData["Day 1"]}
-        />
-      </div>
+      {/* CHARTS */}
+      <ChartsSection
+        data={allDaysData[selectedDay] || allDaysData["Day 1"]}
+      />
     </div>
   );
 };
